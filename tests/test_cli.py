@@ -1,0 +1,29 @@
+"""Tests for the CLI interface."""
+from __future__ import annotations
+
+from typer.testing import CliRunner
+
+from agentbench.cli.main import app
+
+runner = CliRunner()
+
+
+def test_cli_help():
+    result = runner.invoke(app, ["--help"])
+    assert result.exit_code == 0
+    assert "agentbench" in result.stdout.lower() or "eval" in result.stdout.lower()
+
+
+def test_run_not_implemented():
+    result = runner.invoke(app, ["run", "--agent", "test"])
+    assert "not yet implemented" in result.stdout.lower()
+
+
+def test_validate_not_implemented():
+    result = runner.invoke(app, ["validate", "fake.yaml"])
+    assert "not yet implemented" in result.stdout.lower()
+
+
+def test_report_not_implemented():
+    result = runner.invoke(app, ["report", "fake_dir/"])
+    assert "not yet implemented" in result.stdout.lower()
