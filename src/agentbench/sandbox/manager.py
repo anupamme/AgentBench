@@ -11,8 +11,7 @@ Responsibilities:
 from __future__ import annotations
 
 import asyncio
-import hashlib
-import json
+import os
 import shlex
 import shutil
 import subprocess
@@ -78,6 +77,7 @@ class Sandbox:
     status: SandboxStatus = SandboxStatus.CREATING
     created_at: datetime = field(default_factory=datetime.utcnow)
     resource_limits: ResourceLimits = field(default_factory=ResourceLimits)
+    snapshot_commit: str = ""  # git commit hash capturing post-setup state
 
 
 class SandboxError(Exception):
@@ -86,9 +86,14 @@ class SandboxError(Exception):
     pass
 
 
-# Files/dirs to exclude from snapshots
-_SNAPSHOT_EXCLUDE_DIRS = {"node_modules", "__pycache__", ".git", ".venv"}
-_SNAPSHOT_FILE = ".agentbench_snapshot.json"
+# Git identity used when creating snapshot commits in workspaces
+_GIT_ENV = {
+    **os.environ,
+    "GIT_AUTHOR_NAME": "AgentBench",
+    "GIT_AUTHOR_EMAIL": "agentbench@localhost",
+    "GIT_COMMITTER_NAME": "AgentBench",
+    "GIT_COMMITTER_EMAIL": "agentbench@localhost",
+}
 
 
 class SandboxManager:
@@ -151,8 +156,10 @@ class SandboxManager:
                         f"stderr: {result.stderr}"
                     )
 
-            # Take initial filesystem snapshot
-            await self._take_snapshot(host_workspace)
+            # Commit the post-setup workspace state as the diff baseline.
+            # This ensures snapshot_diff reflects changes made *after* setup,
+            # not changes introduced by setup commands themselves.
+            sandbox.snapshot_commit = await self._commit_post_setup_snapshot(host_workspace)
 
             sandbox.status = SandboxStatus.READY
             return sandbox
@@ -203,72 +210,82 @@ class SandboxManager:
         )
 
     async def snapshot_diff(self, sandbox: Sandbox) -> FileDiff:
-        """Compute the filesystem diff between the initial workspace state and current state."""
-        snapshot_path = sandbox.host_workspace_path / _SNAPSHOT_FILE
-        if not snapshot_path.exists():
-            raise SandboxError("No snapshot found; was create() called?")
+        """Compute the filesystem diff between the post-setup state and current state."""
+        if not sandbox.snapshot_commit:
+            raise SandboxError("No snapshot commit found; was create() called?")
 
-        with open(snapshot_path) as f:
-            snapshot = json.load(f)
-
-        old_files: dict[str, dict[str, str | int]] = snapshot.get("files", {})
-
-        # Build current manifest
-        current_files: dict[str, dict[str, str | int]] = {}
         workspace = sandbox.host_workspace_path
-        for file_path in workspace.rglob("*"):
-            if not file_path.is_file():
-                continue
-            rel = file_path.relative_to(workspace)
-            parts = rel.parts
-            # Skip hidden files, snapshot file, and excluded dirs
-            if any(p.startswith(".") for p in parts):
-                continue
-            if any(p in _SNAPSHOT_EXCLUDE_DIRS for p in parts):
-                continue
-            checksum = _sha256(file_path)
-            current_files[str(rel)] = {"checksum": checksum, "size": file_path.stat().st_size}
 
-        added = [k for k in current_files if k not in old_files]
-        deleted = [k for k in old_files if k not in current_files]
-        modified = [
-            k
-            for k in current_files
-            if k in old_files and current_files[k]["checksum"] != old_files[k]["checksum"]
-        ]
+        def _do_diff() -> tuple[str, str]:
+            w = str(workspace)
+            commit = sandbox.snapshot_commit
 
-        # Build unified diffs for modified files
-        raw_diff_parts: list[str] = []
-        total_added = 0
-        total_deleted = 0
+            # Stage all current changes (including new/deleted/modified files)
+            subprocess.run(["git", "-C", w, "add", "-A"], check=True, capture_output=True)
 
-        for rel_path in modified:
-            file_path = workspace / rel_path
-            old_checksum_entry = old_files[rel_path]
-            # We don't have old content directly; use git diff or reconstruct
-            # Since we don't store old content, we note the file changed
-            # and produce a placeholder diff header
-            try:
-                old_content = _get_original_content(workspace, rel_path, snapshot)
-                if old_content is not None:
-                    new_content = file_path.read_text(errors="replace")
-                    diff_output = _unified_diff(old_content, new_content, rel_path)
-                    raw_diff_parts.append(diff_output)
-                    for line in diff_output.splitlines():
-                        if line.startswith("+") and not line.startswith("+++"):
-                            total_added += 1
-                        elif line.startswith("-") and not line.startswith("---"):
-                            total_deleted += 1
-            except Exception:
-                pass  # best-effort diff
+            # Get unified diff against the post-setup commit
+            raw = subprocess.run(
+                ["git", "-C", w, "diff", "--cached", commit],
+                check=True,
+                capture_output=True,
+                text=True,
+                env=_GIT_ENV,
+            ).stdout
+
+            # Get per-file status: A=added, M=modified, D=deleted
+            name_status = subprocess.run(
+                ["git", "-C", w, "diff", "--cached", "--name-status", commit],
+                check=True,
+                capture_output=True,
+                text=True,
+                env=_GIT_ENV,
+            ).stdout
+
+            # Unstage — restore index to the snapshot commit
+            subprocess.run(
+                ["git", "-C", w, "reset", commit],
+                check=True,
+                capture_output=True,
+                env=_GIT_ENV,
+            )
+
+            return raw, name_status
+
+        raw_diff, name_status = await asyncio.to_thread(_do_diff)
+
+        files_added: list[str] = []
+        files_modified: list[str] = []
+        files_deleted: list[str] = []
+
+        for line in name_status.splitlines():
+            if not line.strip():
+                continue
+            status, _, path = line.partition("\t")
+            status = status.strip()
+            path = path.strip()
+            if status == "A":
+                files_added.append(path)
+            elif status == "M":
+                files_modified.append(path)
+            elif status.startswith("D"):
+                files_deleted.append(path)
+
+        total_added = sum(
+            1 for l in raw_diff.splitlines()
+            if l.startswith("+") and not l.startswith("+++")
+        )
+        total_deleted = sum(
+            1 for l in raw_diff.splitlines()
+            if l.startswith("-") and not l.startswith("---")
+        )
 
         return FileDiff(
-            files_added=added,
-            files_modified=modified,
-            files_deleted=deleted,
+            files_added=files_added,
+            files_modified=files_modified,
+            files_deleted=files_deleted,
             total_lines_added=total_added,
             total_lines_deleted=total_deleted,
-            raw_diff="\n".join(raw_diff_parts),
+            raw_diff=raw_diff,
         )
 
     async def teardown(self, sandbox: Sandbox) -> None:
@@ -330,7 +347,7 @@ class SandboxManager:
         def _do_clone() -> None:
             try:
                 subprocess.run(
-                    ["git", "clone", "--depth=100", repo_url, str(dest)],
+                    ["git", "clone", repo_url, str(dest)],
                     check=True,
                     capture_output=True,
                     text=True,
@@ -348,69 +365,50 @@ class SandboxManager:
 
         await asyncio.to_thread(_do_clone)
 
-    async def _take_snapshot(self, workspace: Path) -> None:
-        """Walk the workspace directory and save file checksums to .agentbench_snapshot.json."""
-        files: dict[str, dict[str, str | int]] = {}
-        for file_path in workspace.rglob("*"):
-            if not file_path.is_file():
-                continue
-            rel = file_path.relative_to(workspace)
-            parts = rel.parts
-            if any(p.startswith(".") for p in parts):
-                continue
-            if any(p in _SNAPSHOT_EXCLUDE_DIRS for p in parts):
-                continue
-            checksum = _sha256(file_path)
-            files[str(rel)] = {"checksum": checksum, "size": file_path.stat().st_size}
+    async def _commit_post_setup_snapshot(self, workspace: Path) -> str:
+        """
+        Commit the current workspace state as the diff baseline.
 
-        snapshot = {
-            "files": files,
-            "timestamp": datetime.utcnow().isoformat() + "Z",
-        }
-        snapshot_path = workspace / _SNAPSHOT_FILE
-        with open(snapshot_path, "w") as f:
-            json.dump(snapshot, f, indent=2)
+        Called after setup commands complete so that snapshot_diff measures
+        only changes made by the agent, not changes from setup commands.
 
+        If the workspace has no git repo (e.g. from a local copy), one is
+        initialized first. Returns the commit hash.
+        """
 
-def _sha256(path: Path) -> str:
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(65536), b""):
-            h.update(chunk)
-    return f"sha256:{h.hexdigest()}"
+        def _do_commit() -> str:
+            w = str(workspace)
 
+            if not (workspace / ".git").exists():
+                subprocess.run(["git", "-C", w, "init"], check=True, capture_output=True)
 
-def _get_original_content(
-    workspace: Path, rel_path: str, snapshot: dict[str, object]
-) -> str | None:
-    """
-    Retrieve the original file content.
-    Since we don't store file content in the snapshot (only checksums),
-    we check git for the original. Falls back to None.
-    """
-    try:
-        result = subprocess.run(
-            ["git", "-C", str(workspace), "show", f"HEAD:{rel_path}"],
-            capture_output=True,
-            text=True,
-        )
-        if result.returncode == 0:
-            return result.stdout
-    except Exception:
-        pass
-    return None
+            try:
+                subprocess.run(
+                    ["git", "-C", w, "add", "-A"],
+                    check=True,
+                    capture_output=True,
+                    env=_GIT_ENV,
+                )
+                subprocess.run(
+                    ["git", "-C", w, "commit", "-m", "post-setup snapshot", "--allow-empty"],
+                    check=True,
+                    capture_output=True,
+                    env=_GIT_ENV,
+                )
+            except subprocess.CalledProcessError as e:
+                raise SandboxError(
+                    f"Failed to create post-setup snapshot commit: {e.stderr}"
+                ) from e
 
+            result = subprocess.run(
+                ["git", "-C", w, "rev-parse", "HEAD"],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            return result.stdout.strip()
 
-def _unified_diff(old: str, new: str, filename: str) -> str:
-    """Generate a unified diff between two strings."""
-    import difflib
-
-    old_lines = old.splitlines(keepends=True)
-    new_lines = new.splitlines(keepends=True)
-    diff = difflib.unified_diff(
-        old_lines, new_lines, fromfile=f"a/{filename}", tofile=f"b/{filename}"
-    )
-    return "".join(diff)
+        return await asyncio.to_thread(_do_commit)
 
 
 __all__ = [

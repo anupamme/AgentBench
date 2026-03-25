@@ -19,9 +19,10 @@ def test_run_not_implemented():
     assert "not yet implemented" in result.stdout.lower()
 
 
-def test_validate_not_implemented():
+def test_validate_missing_file():
     result = runner.invoke(app, ["validate", "fake.yaml"])
-    assert "not yet implemented" in result.stdout.lower()
+    assert result.exit_code != 0
+    assert "fake.yaml" in result.stdout.lower()
 
 
 def test_report_not_implemented():
