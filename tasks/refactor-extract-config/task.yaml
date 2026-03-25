@@ -1,0 +1,51 @@
+id: "refactor-extract-config"
+version: 1
+metadata:
+  difficulty: medium
+  task_type: refactor
+  languages: [python]
+  estimated_human_time_minutes: 20
+  tags: [python, refactor, multi-file, config]
+  source: "synthetic"
+setup:
+  repo: "tasks/refactor-extract-config/repo"
+  commit: "HEAD"
+  setup_commands:
+    - "pip install pytest"
+  files_to_highlight:
+    - "db.py"
+    - "api_client.py"
+    - "processor.py"
+    - "tests/test_processor.py"
+prompt: |
+  The codebase has configuration values hardcoded across three files:
+  - `db.py` contains `DB_URL = "postgres://localhost:5432/mydb"`
+  - `api_client.py` contains `API_KEY = "sk-test-123"` and `TIMEOUT = 30`
+  - `processor.py` contains `BATCH_SIZE = 100`
+
+  Refactor the code to extract all configuration into a new `config.py` module
+  at the root of the project. Each of the three files should import its
+  constants from `config` instead of defining them inline.
+
+  All existing tests in `tests/test_processor.py` must continue to pass.
+evaluation:
+  primary:
+    type: test_suite
+    command: "python -m pytest tests/test_processor.py -v"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: lint
+      command: "python -m py_compile config.py db.py api_client.py processor.py"
+      label: "syntax_valid"
+    - type: custom_script
+      command: "python -c \"import ast, sys; files=['db.py','api_client.py','processor.py']; hardcoded=['postgres://','sk-test-','TIMEOUT = 30','BATCH_SIZE = 100']; found=[h for f in files for h in hardcoded if h in open(f).read()]; sys.exit(1 if found else 0)\""
+      pass_condition: "exit_code == 0"
+      label: "no_hardcoded_values"
+    - type: diff_size
+      max_lines_changed: 30
+      label: "reasonable_diff"
+constraints:
+  max_turns: 20
+  max_tokens: 40000
+  timeout_seconds: 120
+  network: false

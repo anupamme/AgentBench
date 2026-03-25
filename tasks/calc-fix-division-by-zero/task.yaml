@@ -1,0 +1,39 @@
+id: "calc-fix-division-by-zero"
+version: 1
+metadata:
+  difficulty: easy
+  task_type: bug_fix
+  languages: [python]
+  estimated_human_time_minutes: 3
+  tags: [python, beginner, error-handling]
+  source: "synthetic"
+setup:
+  repo: "tasks/calc-fix-division-by-zero/repo"
+  commit: "HEAD"
+  setup_commands:
+    - "pip install pytest"
+  files_to_highlight:
+    - "calc.py"
+    - "tests/test_calc.py"
+prompt: |
+  The `divide()` function in `calc.py` crashes with a `ZeroDivisionError` when
+  the divisor is zero. Fix it so that it raises a `ValueError` with the message
+  "Cannot divide by zero" instead. The test `test_divide_by_zero` in
+  `tests/test_calc.py` should pass after your fix.
+evaluation:
+  primary:
+    type: test_suite
+    command: "python -m pytest tests/test_calc.py -v"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: lint
+      command: "python -m py_compile calc.py"
+      label: "syntax_valid"
+    - type: diff_size
+      max_lines_changed: 5
+      label: "minimal_diff"
+constraints:
+  max_turns: 10
+  max_tokens: 20000
+  timeout_seconds: 60
+  network: false
