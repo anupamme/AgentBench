@@ -65,4 +65,21 @@ def validate(
     task_path: str = typer.Argument(..., help="Path to task YAML to validate"),
 ) -> None:
     """Validate a task definition file."""
-    console.print("[yellow]validate command not yet implemented[/yellow]")
+    from pathlib import Path
+
+    from agentbench.core.task_loader import TaskLoader, TaskLoadError
+
+    loader = TaskLoader()
+    path = Path(task_path)
+
+    try:
+        task = loader.load_task(path)
+        console.print(
+            f"[green]✓ Valid task:[/green] {task.id} "
+            f"({task.metadata.difficulty.value}, {task.metadata.task_type.value})"
+        )
+    except TaskLoadError as e:
+        console.print(f"[red]✗ Validation failed for {path}:[/red]")
+        for error in e.errors:
+            console.print(f"  [red]• {error}[/red]")
+        raise typer.Exit(code=1) from None
