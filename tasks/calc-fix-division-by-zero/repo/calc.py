@@ -14,4 +14,6 @@ def multiply(a: float, b: float) -> float:
 
 
 def divide(a: float, b: float) -> float:
-    return a / b  # BUG: crashes with ZeroDivisionError, should raise ValueError
+    if b == 0:
+        raise ValueError("Cannot divide by zero")
+    return a / b

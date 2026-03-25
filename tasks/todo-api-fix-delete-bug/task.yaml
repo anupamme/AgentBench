@@ -27,8 +27,8 @@ prompt: |
      with 3 todos and `offset=1&limit=2`, it should return todos at index 1 and 2,
      but instead returns todos at index 2 and 3.
 
-  Both failing tests (`test_delete_nonexistent` and `test_list_pagination`) in
-  `tests/test_routes.py` must pass after your fix.
+  The three failing tests (`test_delete_nonexistent`, `test_list_todos`, and
+  `test_list_pagination`) in `tests/test_routes.py` must pass after your fix.
 evaluation:
   primary:
     type: test_suite
