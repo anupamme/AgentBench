@@ -5,6 +5,10 @@ from pathlib import Path
 
 import pytest
 
+
+def pytest_configure(config: pytest.Config) -> None:
+    config.addinivalue_line("markers", "docker: tests requiring Docker daemon")
+
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
 
