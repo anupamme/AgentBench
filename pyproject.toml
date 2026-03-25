@@ -52,6 +52,7 @@ select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "TCH"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+markers = ["docker: tests requiring Docker daemon"]
 
 [tool.mypy]
 python_version = "3.12"
