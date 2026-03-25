@@ -10,10 +10,10 @@ from __future__ import annotations
 class TraceCollector:
     """Collects and stores trace events during an agent run."""
 
-    def record(self, event_type: str, data: dict) -> None:
+    def record(self, event_type: str, data: dict[str, object]) -> None:
         raise NotImplementedError
 
-    def summary(self) -> dict:
+    def summary(self) -> dict[str, object]:
         raise NotImplementedError
 
     def to_json(self) -> str:

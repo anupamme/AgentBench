@@ -30,5 +30,5 @@ class AgentAdapter(ABC):
     def version(self) -> str:
         return "0.0.0"
 
-    def config(self) -> dict:
+    def config(self) -> dict[str, object]:
         return {}

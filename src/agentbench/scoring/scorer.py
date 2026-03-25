@@ -9,5 +9,5 @@ from __future__ import annotations
 class Scorer:
     """Multi-dimensional scoring for completed task runs."""
 
-    async def score(self, sandbox: object, eval_spec: object, trace: object) -> dict:
+    async def score(self, sandbox: object, eval_spec: object, trace: object) -> dict[str, object]:
         raise NotImplementedError
