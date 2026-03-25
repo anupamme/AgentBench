@@ -150,11 +150,11 @@ class TraceCollector:
             sequence_number=self._sequence,
         )
         self._sequence += 1
+        self._events.append(event)
         try:
             yield event
         finally:
             event.duration_ms = int((time.monotonic() - start) * 1000)
-            self._events.append(event)
 
     # --- Summarization and serialization ---
 
