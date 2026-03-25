@@ -1,0 +1,48 @@
+id: "todo-api-fix-delete-bug"
+version: 1
+metadata:
+  difficulty: medium
+  task_type: bug_fix
+  languages: [python]
+  estimated_human_time_minutes: 15
+  tags: [python, flask, rest-api, multi-file]
+  source: "synthetic"
+setup:
+  repo: "tasks/todo-api-fix-delete-bug/repo"
+  commit: "HEAD"
+  setup_commands:
+    - "pip install flask pytest"
+  files_to_highlight:
+    - "models.py"
+    - "routes.py"
+    - "tests/test_routes.py"
+prompt: |
+  The TODO API has two bugs that need fixing:
+
+  1. `DELETE /todos/<id>` returns HTTP 200 even when the todo with that ID does
+     not exist. It should return HTTP 404 with `{"error": "not found"}` instead.
+
+  2. The list endpoint `GET /todos` supports `offset` and `limit` query parameters
+     for pagination, but returns the wrong slice — it is off by one. For example,
+     with 3 todos and `offset=1&limit=2`, it should return todos at index 1 and 2,
+     but instead returns todos at index 2 and 3.
+
+  The three failing tests (`test_delete_nonexistent`, `test_list_todos`, and
+  `test_list_pagination`) in `tests/test_routes.py` must pass after your fix.
+evaluation:
+  primary:
+    type: test_suite
+    command: "python -m pytest tests/test_routes.py -v"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: lint
+      command: "python -m py_compile models.py routes.py app.py"
+      label: "syntax_valid"
+    - type: diff_size
+      max_lines_changed: 15
+      label: "minimal_diff"
+constraints:
+  max_turns: 15
+  max_tokens: 30000
+  timeout_seconds: 90
+  network: false

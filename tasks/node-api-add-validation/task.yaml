@@ -1,0 +1,51 @@
+id: "node-api-add-validation"
+version: 1
+metadata:
+  difficulty: hard
+  task_type: feature_add
+  languages: [javascript]
+  estimated_human_time_minutes: 30
+  tags: [javascript, node, express, validation, multi-file]
+  source: "synthetic"
+setup:
+  repo: "tasks/node-api-add-validation/repo"
+  commit: "HEAD"
+  setup_commands:
+    - "npm install"
+  files_to_highlight:
+    - "src/routes/books.js"
+    - "src/models/book.js"
+    - "tests/books.test.js"
+prompt: |
+  The Express bookstore API in `src/routes/books.js` currently accepts any input
+  for `POST /books` without validation. Add input validation so that:
+
+  - `title` is required and must be a non-empty string
+  - `author` is required and must be a non-empty string
+  - `isbn` is required and must match the pattern `^\d{3}-\d{10}$`
+    (e.g. `978-0132350884`)
+  - `price` is required and must be a positive number (> 0)
+
+  When validation fails, respond with HTTP 400 and a JSON body:
+  `{"error": "<field> is invalid"}` (use the first failing field).
+
+  All tests in `tests/books.test.js` must pass after your changes.
+  You may create a new file (e.g. `src/middleware/validate.js`) or add
+  validation inline in the route handler — either approach is acceptable.
+evaluation:
+  primary:
+    type: test_suite
+    command: "npx jest --forceExit"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: lint
+      command: "node --check src/app.js src/routes/books.js src/models/book.js"
+      label: "syntax_valid"
+    - type: diff_size
+      max_lines_changed: 60
+      label: "reasonable_diff"
+constraints:
+  max_turns: 20
+  max_tokens: 50000
+  timeout_seconds: 120
+  network: false
