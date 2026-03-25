@@ -8,11 +8,22 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import yaml
+from pydantic import BaseModel, Field, ValidationError
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 from agentbench.core.models import TaskSpec
+
+
+class _SuiteEntry(BaseModel):
+    path: str = Field(description="Path to a task YAML, relative to the suite file")
+
+
+class _SuiteSpec(BaseModel):
+    name: str = Field(default="", description="Suite name")
+    description: str = Field(default="", description="Suite description")
+    tasks: list[_SuiteEntry] = Field(default_factory=list)
 
 
 class TaskLoadError(Exception):
@@ -49,8 +60,12 @@ class TaskLoader:
 
         try:
             return TaskSpec.model_validate(raw)
-        except Exception as e:
-            raise TaskLoadError(path, [str(e)]) from e
+        except ValidationError as e:
+            errors = [
+                f"{' -> '.join(str(loc) for loc in err['loc'])}: {err['msg']}"
+                for err in e.errors()
+            ]
+            raise TaskLoadError(path, errors) from e
 
     def load_directory(self, directory: Path) -> list[TaskSpec]:
         """
@@ -85,10 +100,22 @@ class TaskLoader:
         except yaml.YAMLError as e:
             raise TaskLoadError(suite_path, [f"YAML parse error: {e}"]) from e
 
+        if not isinstance(raw, dict):
+            raise TaskLoadError(suite_path, ["Suite YAML root must be a mapping"])
+
+        try:
+            suite = _SuiteSpec.model_validate(raw)
+        except ValidationError as e:
+            errors = [
+                f"{' -> '.join(str(loc) for loc in err['loc'])}: {err['msg']}"
+                for err in e.errors()
+            ]
+            raise TaskLoadError(suite_path, errors) from e
+
         base_dir = suite_path.parent
         tasks = []
-        for entry in raw.get("tasks", []):
-            task_path = base_dir / entry["path"]
+        for entry in suite.tasks:
+            task_path = base_dir / entry.path
             tasks.append(self.load_task(task_path))
         return tasks
 
