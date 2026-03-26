@@ -17,7 +17,7 @@ class AdapterNotFoundError(Exception):
 # Registry of known adapters: name → import path
 _ADAPTER_REGISTRY: dict[str, str] = {
     "anthropic-api": "agentbench.adapters.anthropic_api:AnthropicAPIAdapter",
-    # "claude-code": "agentbench.adapters.claude_code:ClaudeCodeAdapter",  # Issue #7
+    "claude-code": "agentbench.adapters.claude_code:ClaudeCodeAdapter",
 }
 
 
