@@ -103,14 +103,95 @@ class TestClaudeCodeAdapterBinaryDiscovery:
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
         with patch.object(ClaudeCodeAdapter, "_find_claude_binary", return_value="/usr/bin/claude"):
             adapter = ClaudeCodeAdapter()
-        with pytest.raises(EnvironmentError, match="ANTHROPIC_API_KEY"):
-            await adapter.solve(_make_task(), _make_mock_sandbox(), MagicMock(), TraceCollector("r", "t", "claude-code"))
+        with pytest.raises(OSError, match="ANTHROPIC_API_KEY"):
+            await adapter.solve(
+                _make_task(), _make_mock_sandbox(), MagicMock(),
+                TraceCollector("r", "t", "claude-code"),
+            )
 
     def test_finds_via_local_path(self) -> None:
         with patch("shutil.which", return_value=None), \
              patch.object(Path, "exists", return_value=True):
             adapter = ClaudeCodeAdapter()
             assert "claude" in adapter._claude_path
+
+
+# ---------------------------------------------------------------------------
+# Unit tests — Bedrock support
+# ---------------------------------------------------------------------------
+
+class TestBedrockSupport:
+    @pytest.fixture
+    def adapter(self) -> ClaudeCodeAdapter:
+        with patch.object(ClaudeCodeAdapter, "_find_claude_binary", return_value="/usr/bin/claude"):
+            return ClaudeCodeAdapter(use_bedrock=True)
+
+    def test_bedrock_sets_flag(self) -> None:
+        with patch.object(ClaudeCodeAdapter, "_find_claude_binary", return_value="/usr/bin/claude"):
+            adapter = ClaudeCodeAdapter(use_bedrock=True)
+        assert adapter._use_bedrock is True
+
+    def test_bedrock_build_env_sets_var(
+        self, adapter: ClaudeCodeAdapter, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("AWS_ACCESS_KEY_ID", "AKIAIOSFODNN7EXAMPLE")
+        monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "secret")
+        env = adapter._build_env()
+        assert env["CLAUDE_CODE_USE_BEDROCK"] == "1"
+
+    def test_bedrock_build_env_sets_region(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("AWS_ACCESS_KEY_ID", "AKIAIOSFODNN7EXAMPLE")
+        with patch.object(ClaudeCodeAdapter, "_find_claude_binary", return_value="/usr/bin/claude"):
+            adapter = ClaudeCodeAdapter(use_bedrock=True, aws_region="us-west-2")
+        env = adapter._build_env()
+        assert env["AWS_REGION"] == "us-west-2"
+
+    def test_bedrock_region_does_not_override_when_none(
+        self, adapter: ClaudeCodeAdapter, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("AWS_ACCESS_KEY_ID", "AKIAIOSFODNN7EXAMPLE")
+        monkeypatch.setenv("AWS_REGION", "eu-west-1")
+        env = adapter._build_env()
+        # aws_region=None → existing env var should be untouched
+        assert env["AWS_REGION"] == "eu-west-1"
+
+    def test_bedrock_missing_credentials_raises(
+        self, adapter: ClaudeCodeAdapter, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.delenv("AWS_ACCESS_KEY_ID", raising=False)
+        monkeypatch.delenv("AWS_PROFILE", raising=False)
+        monkeypatch.delenv("AWS_ROLE_ARN", raising=False)
+        with pytest.raises(OSError, match="Bedrock authentication"):
+            adapter._build_env()
+
+    def test_bedrock_accepts_aws_profile(
+        self, adapter: ClaudeCodeAdapter, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.delenv("AWS_ACCESS_KEY_ID", raising=False)
+        monkeypatch.delenv("AWS_ROLE_ARN", raising=False)
+        monkeypatch.setenv("AWS_PROFILE", "my-profile")
+        env = adapter._build_env()  # should not raise
+        assert env["CLAUDE_CODE_USE_BEDROCK"] == "1"
+
+    def test_bedrock_accepts_role_arn(
+        self, adapter: ClaudeCodeAdapter, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.delenv("AWS_ACCESS_KEY_ID", raising=False)
+        monkeypatch.delenv("AWS_PROFILE", raising=False)
+        monkeypatch.setenv("AWS_ROLE_ARN", "arn:aws:iam::123456789012:role/MyRole")
+        env = adapter._build_env()  # should not raise
+        assert env["CLAUDE_CODE_USE_BEDROCK"] == "1"
+
+    def test_direct_api_missing_key_raises(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        with patch.object(ClaudeCodeAdapter, "_find_claude_binary", return_value="/usr/bin/claude"):
+            adapter = ClaudeCodeAdapter(use_bedrock=False)
+        with pytest.raises(OSError, match="ANTHROPIC_API_KEY"):
+            adapter._build_env()
 
 
 # ---------------------------------------------------------------------------
@@ -245,6 +326,24 @@ class TestClaudeCodeAdapterSolve:
         start_events = [e for e in trace.events if e.event_type == EventType.AGENT_START]
         assert len(start_events) == 1
         assert start_events[0].data["model"] == "test-model"
+        assert start_events[0].data["provider"] == "anthropic"
+
+    async def test_solve_bedrock_provider_in_agent_start(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("AWS_ACCESS_KEY_ID", "AKIAIOSFODNN7EXAMPLE")
+        monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "secret")
+        bedrock_model = "us.anthropic.claude-sonnet-4-5-20251001-v1:0"
+        with patch.object(ClaudeCodeAdapter, "_find_claude_binary", return_value="/usr/bin/claude"):
+            adapter = ClaudeCodeAdapter(AgentConfig(model=bedrock_model), use_bedrock=True)
+        trace = TraceCollector("run-1", "task-1", "claude-code")
+
+        mock_proc = _make_proc([], returncode=0)
+        with patch("asyncio.create_subprocess_exec", return_value=mock_proc):
+            await adapter.solve(_make_task(), _make_mock_sandbox(), MagicMock(), trace)
+
+        start_events = [e for e in trace.events if e.event_type == EventType.AGENT_START]
+        assert start_events[0].data["provider"] == "bedrock"
 
     async def test_solve_records_agent_done(self) -> None:
         with patch.object(ClaudeCodeAdapter, "_find_claude_binary", return_value="/usr/bin/claude"):

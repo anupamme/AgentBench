@@ -6,7 +6,15 @@ structured JSON output, and maps actions to trace events.
 
 Prerequisites:
 - `claude` CLI must be installed and on PATH
-- ANTHROPIC_API_KEY must be set in the environment
+
+Authentication (choose one):
+- Direct Anthropic API (default): set ANTHROPIC_API_KEY in the environment.
+- AWS Bedrock: pass use_bedrock=True. The claude CLI reads Bedrock credentials
+  from the standard AWS environment variables (AWS_ACCESS_KEY_ID,
+  AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN) or from ~/.aws/credentials.
+  Set AWS_REGION (or AWS_DEFAULT_REGION) to select the region.
+  Use a Bedrock model ID in AgentConfig, e.g.:
+    "us.anthropic.claude-sonnet-4-5-20251001-v1:0"
 
 Claude Code CLI usage:
     claude -p "your prompt here" --output-format stream-json --max-turns N
@@ -38,10 +46,24 @@ class ClaudeCodeNotFoundError(Exception):
 
 
 class ClaudeCodeAdapter(AgentAdapter):
-    """Adapter that invokes Claude Code CLI as a subprocess."""
+    """Adapter that invokes Claude Code CLI as a subprocess.
 
-    def __init__(self, config: AgentConfig | None = None):
+    Supports two authentication providers:
+    - Direct Anthropic API (default): requires ANTHROPIC_API_KEY env var.
+    - AWS Bedrock: pass use_bedrock=True and set standard AWS credential env
+      vars or ~/.aws/credentials. Optionally pass aws_region to override
+      AWS_REGION / AWS_DEFAULT_REGION.
+    """
+
+    def __init__(
+        self,
+        config: AgentConfig | None = None,
+        use_bedrock: bool = False,
+        aws_region: str | None = None,
+    ):
         super().__init__(config)
+        self._use_bedrock = use_bedrock
+        self._aws_region = aws_region
         self._claude_path = self._find_claude_binary()
         # Tracks the most recently seen tool name to correlate tool_result events
         self._last_tool_name: str = ""
@@ -72,6 +94,40 @@ class ClaudeCodeAdapter(AgentAdapter):
             "Install it with: npm install -g @anthropic-ai/claude-code"
         )
 
+    def _build_env(self) -> dict[str, str]:
+        """
+        Build the subprocess environment with the correct auth credentials.
+
+        - Direct API: validates ANTHROPIC_API_KEY is present.
+        - Bedrock: sets CLAUDE_CODE_USE_BEDROCK=1 and optionally AWS_REGION;
+          validates that at least one AWS credential source is available.
+        """
+        env = os.environ.copy()
+
+        if self._use_bedrock:
+            env["CLAUDE_CODE_USE_BEDROCK"] = "1"
+            if self._aws_region:
+                env["AWS_REGION"] = self._aws_region
+            # Ensure at least one AWS credential source is configured.
+            has_keys = bool(env.get("AWS_ACCESS_KEY_ID"))
+            has_profile = bool(env.get("AWS_PROFILE"))
+            has_role = bool(env.get("AWS_ROLE_ARN"))
+            if not (has_keys or has_profile or has_role):
+                raise OSError(
+                    "Bedrock authentication is not configured. "
+                    "Set AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY, "
+                    "AWS_PROFILE, or AWS_ROLE_ARN before running the Claude Code adapter."
+                )
+        else:
+            api_key = env.get("ANTHROPIC_API_KEY")
+            if not api_key:
+                raise OSError(
+                    "ANTHROPIC_API_KEY is not set. "
+                    "Export it before running the Claude Code adapter."
+                )
+
+        return env
+
     async def solve(
         self,
         task: TaskSpec,
@@ -86,7 +142,12 @@ class ClaudeCodeAdapter(AgentAdapter):
 
         trace.record(
             EventType.AGENT_START,
-            {"model": self.config.model, "task_id": task.id, "adapter": self.name()},
+            {
+                "model": self.config.model,
+                "task_id": task.id,
+                "adapter": self.name(),
+                "provider": "bedrock" if self._use_bedrock else "anthropic",
+            },
         )
 
         cmd = [
@@ -100,14 +161,7 @@ class ClaudeCodeAdapter(AgentAdapter):
         cwd = str(sandbox.host_workspace_path)
         cmd.extend(["--cwd", cwd])
 
-        api_key = os.environ.get("ANTHROPIC_API_KEY")
-        if not api_key:
-            raise EnvironmentError(
-                "ANTHROPIC_API_KEY is not set. "
-                "Export it before running the Claude Code adapter."
-            )
-        env = os.environ.copy()
-        env["ANTHROPIC_API_KEY"] = api_key
+        env = self._build_env()
 
         proc = await asyncio.create_subprocess_exec(
             *cmd,
