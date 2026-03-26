@@ -18,6 +18,7 @@ class AdapterNotFoundError(Exception):
 _ADAPTER_REGISTRY: dict[str, str] = {
     "anthropic-api": "agentbench.adapters.anthropic_api:AnthropicAPIAdapter",
     "claude-code": "agentbench.adapters.claude_code:ClaudeCodeAdapter",
+    "mock": "agentbench.adapters.mock:MockAdapter",
 }
 
 

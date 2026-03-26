@@ -116,8 +116,6 @@ class SandboxManager:
     ) -> Sandbox:
         """Create and start a sandbox for the given task."""
         limits = resource_limits or ResourceLimits()
-        # Override network from task constraints
-        limits.network_enabled = task.constraints.network
 
         host_workspace = Path(tempfile.mkdtemp(prefix="agentbench_"))
 
@@ -333,7 +331,10 @@ class SandboxManager:
             "image": image,
             "volumes": {str(host_workspace): {"bind": self.WORKSPACE_CONTAINER_PATH, "mode": "rw"}},
             "working_dir": self.WORKSPACE_CONTAINER_PATH,
-            "network_disabled": not limits.network_enabled,
+            # Network is always enabled at the container level so that setup_commands
+            # (e.g. pip install) can reach the internet. The task.constraints.network
+            # flag is enforced by agent adapters, not at the Docker layer, since
+            # Docker container networking cannot be changed after creation.
             "mem_limit": f"{limits.memory_mb}m",
             "nano_cpus": limits.cpu_count * 1_000_000_000,
             "detach": True,
