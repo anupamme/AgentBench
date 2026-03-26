@@ -10,7 +10,7 @@ and enforces constraints (turn limit, token budget, wall clock timeout).
 """
 from __future__ import annotations
 
-import base64
+import asyncio
 import time
 from typing import TYPE_CHECKING, Any
 
@@ -20,6 +20,8 @@ from agentbench.adapters.base import AgentAdapter, AgentConfig, AgentResult
 from agentbench.trace.events import EventType, TokenUsage
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from agentbench.core.models import TaskSpec
     from agentbench.sandbox.manager import Sandbox, SandboxManager
     from agentbench.trace.collector import TraceCollector
@@ -304,42 +306,46 @@ class AnthropicAPIAdapter(AgentAdapter):
                     return result.stderr or f"Error reading {path}", True
                 return result.stdout, False
 
-            elif action == "write":
+            elif action in ("write", "append"):
                 content: str = tool_input.get("content", "")
-                encoded = base64.b64encode(content.encode()).decode()
-                cmd = (
-                    f"python3 -c \""
-                    f"import base64, pathlib; "
-                    f"p = pathlib.Path('{path}'); "
-                    f"p.parent.mkdir(parents=True, exist_ok=True); "
-                    f"p.write_text(base64.b64decode('{encoded}').decode())"
-                    f"\""
-                )
-                result = await sandbox_manager.exec(sandbox, cmd, timeout=30)
-                trace.record_file_write(path, len(content), is_new=True)
-                if result.exit_code != 0:
-                    return result.stderr or f"Error writing {path}", True
-                return "File written successfully", False
-
-            elif action == "append":
-                content = tool_input.get("content", "")
-                encoded = base64.b64encode(content.encode()).decode()
-                cmd = (
-                    f"python3 -c \""
-                    f"import base64, pathlib; "
-                    f"p = pathlib.Path('{path}'); "
-                    f"p.parent.mkdir(parents=True, exist_ok=True); "
-                    f"p.open('a').write(base64.b64decode('{encoded}').decode())"
-                    f"\""
-                )
-                result = await sandbox_manager.exec(sandbox, cmd, timeout=30)
-                trace.record_file_write(path, len(content), is_new=False)
-                if result.exit_code != 0:
-                    return result.stderr or f"Error appending to {path}", True
-                return "Content appended successfully", False
+                is_new = action == "write"
+                await self._write_file(sandbox, path, content, append=not is_new)
+                trace.record_file_write(path, len(content), is_new=is_new)
+                msg = "File written successfully" if is_new else "Content appended successfully"
+                return msg, False
 
             else:
                 return f"Unknown file_editor action: {action}", True
 
         else:
             return f"Unknown tool: {tool_name}", True
+
+    def _resolve_workspace_path(self, sandbox: Sandbox, path: str) -> Path:
+        """Map a container-side path (absolute or relative) to the host filesystem."""
+        workspace_prefix = sandbox.workspace_path  # e.g. "/workspace"
+        if path.startswith(workspace_prefix + "/"):
+            rel = path[len(workspace_prefix) + 1:]
+        elif path == workspace_prefix:
+            rel = ""
+        else:
+            # Relative path or unknown absolute path — treat as relative to workspace
+            rel = path.lstrip("/")
+        return sandbox.host_workspace_path / rel
+
+    async def _write_file(
+        self, sandbox: Sandbox, path: str, content: str, append: bool = False
+    ) -> None:
+        """Write or append content to a file via the host-side workspace mount.
+
+        Writing directly to host_workspace_path (which is bind-mounted as /workspace
+        in the container) avoids ARG_MAX limits that would affect exec-based approaches
+        for large files.
+        """
+        host_path = self._resolve_workspace_path(sandbox, path)
+
+        def _do_write() -> None:
+            host_path.parent.mkdir(parents=True, exist_ok=True)
+            mode = "a" if append else "w"
+            host_path.open(mode).write(content)
+
+        await asyncio.to_thread(_do_write)
