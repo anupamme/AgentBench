@@ -36,18 +36,20 @@ class FailureClassifier:
         Rules are applied in priority order. The first matching rule determines
         the primary category. Additional matching rules populate secondary_categories.
 
-        Priority order (highest to lowest):
-        1. TIMEOUT_OR_LOOP — if trace ends with CONSTRAINT_HIT
-        2. NO_VERIFICATION — if agent never ran tests
-        3. IGNORED_TEST_FAILURE — if agent ran tests, saw failure, didn't iterate
-        4. CONTEXT_MISS — if agent didn't read relevant files
-        5. HALLUCINATED_API — if agent's edits reference non-existent symbols
-        6. INCOMPLETE_FIX — if partial_score > 0 but < 1.0
-        7. REGRESSION — if primary passes but full_suite secondary fails
-        8. WRONG_DIAGNOSIS — if agent edited wrong files
-        9. CORRECT_PLAN_BAD_EXECUTION — if correct files but tests still fail
-        10. OVER_ENGINEERING — if diff_size secondary fails
-        11. UNKNOWN — fallback
+        Implemented rules in priority order (highest to lowest):
+        1. TIMEOUT_OR_LOOP — trace ends with CONSTRAINT_HIT
+        2. NO_VERIFICATION — no test run detected in trace
+        3. IGNORED_TEST_FAILURE — ran tests, saw failure, declared done without iterating
+        4. CONTEXT_MISS — none of files_to_highlight were read
+        5. INCOMPLETE_FIX — partial_score > 0 but primary didn't pass
+        6. REGRESSION — partial_score == 1.0 but a secondary full-suite check failed
+        7. OVER_ENGINEERING — diff_size secondary failed
+        8. UNKNOWN — fallback
+
+        Not yet implemented (require solution diffing unavailable at runtime):
+        - HALLUCINATED_API
+        - WRONG_DIAGNOSIS
+        - CORRECT_PLAN_BAD_EXECUTION
         """
         if score.overall_pass:
             return None
@@ -79,17 +81,19 @@ class FailureClassifier:
             missed = set(highlighted) - set(read_files)
             evidence.append(f"Agent didn't read highlighted files: {missed}")
 
-        # Rule 5: INCOMPLETE_FIX
+        # Rule 5: INCOMPLETE_FIX (was rule 6 in original spec — HALLUCINATED_API not implemented)
         if self._check_incomplete_fix(score):
             matched.append(FailureCategory.INCOMPLETE_FIX)
             evidence.append(f"Partial score: {score.correctness.partial_score:.2f}")
 
-        # Rule 6: REGRESSION
+        # Rule 6: REGRESSION (WRONG_DIAGNOSIS and CORRECT_PLAN_BAD_EXECUTION not implemented)
         if self._check_regression(score):
             matched.append(FailureCategory.REGRESSION)
-            evidence.append("Primary tests pass but secondary full_suite fails")
+            evidence.append(
+                "All targeted tests pass (partial_score=1.0) but secondary full_suite fails"
+            )
 
-        # Rule 7: OVER_ENGINEERING
+        # Rule 7: OVER_ENGINEERING (was rule 10 in original spec)
         if self._check_over_engineering(score):
             matched.append(FailureCategory.OVER_ENGINEERING)
             evidence.append(
@@ -184,9 +188,15 @@ class FailureClassifier:
         return not score.correctness.primary_pass and score.correctness.partial_score > 0
 
     def _check_regression(self, score: TaskScore) -> bool:
-        """True if a secondary with 'suite' or 'regression' in label failed while primary passed."""
-        # This only applies if primary passed but something else didn't
-        # In a failed task, check if partial_score is 1.0 but secondary failed
+        """True if all targeted tests pass (partial_score == 1.0) but a secondary suite fails.
+
+        classify() is only called for failed tasks (primary_pass=False), so we cannot
+        check primary_pass directly. partial_score == 1.0 serves as the proxy: it means
+        every targeted test passed, yet the overall run still failed — most likely because
+        a secondary full-suite check caught a regression introduced by the fix.
+        """
+        if score.correctness.partial_score < 1.0:
+            return False
         for sr in score.correctness.secondary_results:
             if ("suite" in sr.label.lower() or "regression" in sr.label.lower()) and not sr.passed:
                 return True

@@ -132,3 +132,20 @@ class TestFailureClassifier:
         result = classifier.classify(score, trace, _make_task())
         assert result is not None
         # Should still classify something, likely UNKNOWN or another match
+
+    def test_regression_detected(self):
+        classifier = FailureClassifier()
+        # partial_score=1.0 means all targeted tests pass, but a secondary suite failed
+        secondary = [SecondaryResult(label="full_suite", passed=False, output="3 broken", exit_code=1)]
+        score = _make_score(primary_pass=False, partial=1.0, secondary=secondary)
+        trace = TraceCollector("r", "t", "a")
+        trace.record(EventType.AGENT_START, {"prompt": "fix", "model": "t", "config": {}})
+        trace.record_file_read("main.py", 100)
+        trace.record_file_write("main.py", 120)
+        trace.record_command("pytest")
+        trace.record_command_output("5 passed", "", 1)
+        trace.record(EventType.AGENT_DONE, {"reason": "completed"})
+
+        result = classifier.classify(score, trace, _make_task())
+        assert result is not None
+        assert FailureCategory.REGRESSION in [result.primary_category] + result.secondary_categories
