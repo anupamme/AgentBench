@@ -83,3 +83,59 @@ def validate(
         for error in e.errors:
             console.print(f"  [red]• {error}[/red]")
         raise typer.Exit(code=1) from None
+
+
+@app.command()
+def scaffold(
+    id: str = typer.Option(..., help="Task ID (kebab-case, e.g. fix-null-pointer-bug)"),
+    task_type: str = typer.Option(..., help="Task type: bug_fix, feature_add, refactor, etc."),
+    difficulty: str = typer.Option("medium", help="Difficulty: easy, medium, hard, expert"),
+    language: str = typer.Option("python", help="Primary language: python or javascript"),
+) -> None:
+    """Create a new task from a template."""
+    from agentbench.tools.scaffold_task import scaffold_task
+
+    try:
+        scaffold_task(id=id, task_type=task_type, difficulty=difficulty, language=language)
+    except (ValueError, FileExistsError) as e:
+        console.print(f"[red]✗ {e}[/red]")
+        raise typer.Exit(code=1) from None
+
+
+@app.command(name="deep-validate")
+def deep_validate(
+    task_dir: str = typer.Argument(..., help="Path to task directory"),
+) -> None:
+    """Run deep validation on a task (requires Docker)."""
+    import asyncio
+    from pathlib import Path
+
+    from rich.table import Table
+
+    from agentbench.tools.validate_task import TaskValidator
+
+    path = Path(task_dir)
+    if not path.is_dir():
+        console.print(f"[red]✗ Not a directory: {path}[/red]")
+        raise typer.Exit(code=1)
+
+    result = asyncio.run(TaskValidator().validate(path))
+
+    table = Table(title=f"Validation: {result.task_id}", show_lines=True)
+    table.add_column("Check", style="bold")
+    table.add_column("Result", justify="center")
+    table.add_column("Message")
+    table.add_column("Duration", justify="right")
+
+    for check in result.checks:
+        status = "[green]✓ pass[/green]" if check.passed else "[red]✗ fail[/red]"
+        duration = f"{check.duration_seconds:.2f}s" if check.duration_seconds else ""
+        table.add_row(check.name, status, check.message, duration)
+
+    console.print(table)
+
+    if result.passed:
+        console.print(f"\n[green]✓ All checks passed for {result.task_id}[/green]\n")
+    else:
+        console.print(f"\n[red]✗ Validation failed for {result.task_id}[/red]\n")
+        raise typer.Exit(code=1)
