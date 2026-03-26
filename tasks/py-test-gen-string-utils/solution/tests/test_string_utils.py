@@ -44,7 +44,7 @@ class TestCamelToSnake:
         assert camel_to_snake("snake_case") == "snake_case"
 
     def test_acronym(self):
-        assert camel_to_snake("getHTTPResponse") == "get_h_t_t_p_response"
+        assert camel_to_snake("getHTTPResponse") == "get_http_response"
 
 
 class TestPadLeft:

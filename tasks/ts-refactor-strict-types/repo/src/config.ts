@@ -1,4 +1,5 @@
-export function parseConfig(raw: any): any {
+// BUG: parameters have no type annotations → implicit any, fails noImplicitAny
+export function parseConfig(raw) {
   return {
     host: raw.host || 'localhost',
     port: Number(raw.port) || 3000,
@@ -7,10 +8,10 @@ export function parseConfig(raw: any): any {
   };
 }
 
-export function mergeConfigs(base: any, override: any): any {
+export function mergeConfigs(base, override) {
   return { ...base, ...override };
 }
 
-export function getTag(config: any, index: any): any {
+export function getTag(config, index) {
   return config.tags[index];
 }

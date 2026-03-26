@@ -1,4 +1,5 @@
 import threading
+import time
 
 
 class Counter:
@@ -7,6 +8,7 @@ class Counter:
 
     def increment(self):
         current = self._value
+        time.sleep(0)  # simulates a slow read-modify-write; exposes race condition
         self._value = current + 1
 
     def value(self):

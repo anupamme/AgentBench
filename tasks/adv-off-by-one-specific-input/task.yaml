@@ -5,7 +5,7 @@ metadata:
   task_type: bug_fix
   languages: [python]
   estimated_human_time_minutes: 40
-  tags: [python, adversarial, sorting, off-by-one, edge-case]
+  tags: [python, adversarial, binary-search, off-by-one, edge-case]
   source: "adversarial"
 setup:
   repo: "tasks/adv-off-by-one-specific-input/repo"
@@ -16,10 +16,11 @@ setup:
     - "sorter.py"
     - "tests/test_sorter.py"
 prompt: |
-  The `merge_sort` function in `sorter.py` works for most inputs but produces
-  wrong results when the input length is a power of 2 (2, 4, 8, 16...).
-  The test `test_sort_power_of_two` demonstrates the failure. Find and fix
-  the bug in the `_merge` helper function.
+  The `binary_search` function in `sorter.py` returns the correct index for
+  most inputs, but fails to find elements at the last position in the array.
+  The tests `test_find_last` and `test_two_elements_find_second` demonstrate
+  the failure. Find and fix the off-by-one in the initialisation of the search
+  bounds. Do not modify the test file.
 evaluation:
   primary:
     type: test_suite

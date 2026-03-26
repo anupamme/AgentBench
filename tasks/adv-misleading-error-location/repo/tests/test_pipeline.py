@@ -6,7 +6,7 @@ from validator import validate_config
 
 @pytest.fixture
 def config_file(tmp_path):
-    data = {"host": "example.com", "port": 8080, "timeout": 30, "debug": False}
+    data = {"host": "example.com", "port": 8080, "timeout": "30", "debug": False}
     p = tmp_path / "config.json"
     p.write_text(json.dumps(data))
     return str(p)

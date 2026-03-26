@@ -25,6 +25,6 @@ export function mergeConfigs(base: AppConfig, override: Partial<AppConfig>): App
   return { ...base, ...override };
 }
 
-export function getTag(config: AppConfig, index: number): string {
+export function getTag(config: AppConfig, index: number): string | undefined {
   return config.tags[index];
 }

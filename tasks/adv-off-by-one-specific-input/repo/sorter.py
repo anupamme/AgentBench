@@ -1,24 +1,13 @@
-def merge_sort(arr: list) -> list:
-    if len(arr) <= 1:
-        return arr[:]
-    mid = len(arr) // 2
-    left = merge_sort(arr[:mid])
-    right = merge_sort(arr[mid:])
-    return _merge(left, right, len(arr))
-
-
-def _merge(left: list, right: list, original_len: int) -> list:
-    result = []
-    i = j = 0
-    # BUG: uses original_len // 2 instead of len(left)
-    boundary = original_len // 2
-    while i < boundary and j < len(right):
-        if left[i] <= right[j]:
-            result.append(left[i])
-            i += 1
+def binary_search(arr: list, target: int) -> int:
+    """Return the index of target in sorted arr, or -1 if not found."""
+    lo = 0
+    hi = len(arr) - 2  # BUG: off-by-one; should be len(arr) - 1
+    while lo <= hi:
+        mid = (lo + hi) // 2
+        if arr[mid] == target:
+            return mid
+        elif arr[mid] < target:
+            lo = mid + 1
         else:
-            result.append(right[j])
-            j += 1
-    result.extend(left[i:])
-    result.extend(right[j:])
-    return result
+            hi = mid - 1
+    return -1

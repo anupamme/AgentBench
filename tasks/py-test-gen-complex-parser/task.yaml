@@ -24,11 +24,11 @@ prompt: |
   - Unary minus
   - Division and complex nested expressions
   - Error cases (invalid tokens, unmatched parentheses)
-  Achieve at least 75% line coverage.
+  Achieve at least 90% line coverage.
 evaluation:
   primary:
     type: test_suite
-    command: "python -m pytest tests/test_expr_parser.py --cov=expr_parser --cov-fail-under=75 -v"
+    command: "python -m pytest tests/test_expr_parser.py --cov=expr_parser --cov-fail-under=90 -v"
     pass_condition: "exit_code == 0"
   secondary:
     - type: lint

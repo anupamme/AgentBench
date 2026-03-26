@@ -15,7 +15,8 @@ test('parseConfig with defaults', () => {
 });
 
 test('mergeConfigs', () => {
-  const merged = mergeConfigs({ host: 'a', port: 1 }, { port: 2 });
+  const base = { host: 'a', port: 1, debug: false, tags: [] };
+  const merged = mergeConfigs(base, { port: 2 });
   expect(merged.port).toBe(2);
   expect(merged.host).toBe('a');
 });

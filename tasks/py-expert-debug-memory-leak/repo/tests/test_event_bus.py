@@ -14,7 +14,11 @@ class Subscriber:
 def test_emit_works():
     bus = EventBus()
     results = []
-    bus.subscribe("x", results.append)
+
+    def handler(data):
+        results.append(data)
+
+    bus.subscribe("x", handler)
     bus.emit("x", 42)
     assert results == [42]
 
