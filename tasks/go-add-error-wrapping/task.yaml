@@ -12,16 +12,16 @@ setup:
   commit: "HEAD"
   dockerfile: "golang:1.21-bullseye"
   setup_commands:
-    - "go test ./..."
+    - "go test -run='^$' ./..."
   files_to_highlight:
     - "storage.go"
     - "storage_test.go"
 prompt: |
-  The `FindUser` function in `storage.go` returns `ErrNotFound` directly, but the
-  error is not wrapped — callers using `errors.Is` at a higher level cannot detect
-  it when it's wrapped further. Wrap the returned error with `fmt.Errorf(...%w...)`
-  so that `errors.Is(err, ErrNotFound)` returns true even when the error is
-  double-wrapped. The test `TestNotFoundWrapped` must pass.
+  The `FindUser` function in `storage.go` wraps its error using `fmt.Errorf` with
+  `%v`, which creates an opaque error string. Callers that use `errors.Is` to check
+  for `ErrNotFound` get `false` even though the error originated from `ErrNotFound`.
+  Fix the error wrapping so that `errors.Is(err, ErrNotFound)` returns true.
+  The tests `TestFindUserNotFound` and `TestNotFoundWrapped` must pass.
 evaluation:
   primary:
     type: test_suite

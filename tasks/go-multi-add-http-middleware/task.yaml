@@ -12,7 +12,7 @@ setup:
   commit: "HEAD"
   dockerfile: "golang:1.21-bullseye"
   setup_commands:
-    - "go test ./..."
+    - "go build ./..."
   files_to_highlight:
     - "main.go"
     - "handlers.go"

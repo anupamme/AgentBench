@@ -5,6 +5,7 @@ async function validatePayment(orderId) {
 }
 
 async function updateInventory(orderId) {
+  await new Promise(resolve => setImmediate(resolve)); // simulates async I/O
   inventoryUpdated = true;
   return { orderId, updated: true };
 }

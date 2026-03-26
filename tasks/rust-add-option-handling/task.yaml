@@ -10,17 +10,17 @@ metadata:
 setup:
   repo: "tasks/rust-add-option-handling/repo"
   commit: "HEAD"
-  dockerfile: "rust:1.75-slim"
+  dockerfile: "rust:1.75"
   setup_commands:
-    - "cargo test"
+    - "cargo test --no-run"
   files_to_highlight:
     - "src/lib.rs"
     - "tests/integration_test.rs"
 prompt: |
-  The `find_user` function in `src/lib.rs` panics when the user is not found
-  because it uses `unwrap()`. Change the return type to `Option<User>` so that
-  it returns `None` instead of panicking. The test `test_find_missing_user` in
-  `tests/integration_test.rs` must pass.
+  The `find_user` function in `src/lib.rs` returns `Option<User>` but uses
+  `unwrap()` internally, which panics when the user is not found instead of
+  returning `None`. Fix `find_user` so it returns `None` for missing users
+  rather than panicking. The test `test_find_missing_user` must pass.
 evaluation:
   primary:
     type: test_suite

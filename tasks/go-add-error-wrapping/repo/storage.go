@@ -1,6 +1,9 @@
 package main
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 var ErrNotFound = errors.New("not found")
 
@@ -17,7 +20,8 @@ var db = map[int]User{
 func FindUser(id int) (User, error) {
 	u, ok := db[id]
 	if !ok {
-		return User{}, ErrNotFound
+		// Bug: uses %v instead of %w, so errors.Is cannot unwrap this error
+		return User{}, fmt.Errorf("user %d: %v", id, ErrNotFound)
 	}
 	return u, nil
 }

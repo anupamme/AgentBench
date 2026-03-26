@@ -10,9 +10,9 @@ metadata:
 setup:
   repo: "tasks/rust-fix-integer-overflow/repo"
   commit: "HEAD"
-  dockerfile: "rust:1.75-slim"
+  dockerfile: "rust:1.75"
   setup_commands:
-    - "cargo test"
+    - "cargo test --no-run"
   files_to_highlight:
     - "src/lib.rs"
     - "tests/integration_test.rs"

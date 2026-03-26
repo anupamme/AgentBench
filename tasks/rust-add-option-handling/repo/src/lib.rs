@@ -10,8 +10,9 @@ static USERS: &[(&str, u32)] = &[
     ("Carol", 3),
 ];
 
-/// Find a user by ID, panicking if not found.
-pub fn find_user(id: u32) -> User {
+/// Find a user by ID. Returns None if not found.
+pub fn find_user(id: u32) -> Option<User> {
+    // Bug: unwrap() panics on missing user instead of returning None
     let (name, found_id) = USERS.iter().find(|(_, uid)| *uid == id).unwrap();
-    User { id: found_id.clone(), name: name.to_string() }
+    Some(User { id: *found_id, name: name.to_string() })
 }

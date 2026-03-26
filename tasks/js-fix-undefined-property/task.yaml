@@ -10,7 +10,7 @@ metadata:
 setup:
   repo: "tasks/js-fix-undefined-property/repo"
   commit: "HEAD"
-  dockerfile: "node:20-slim"
+  dockerfile: "node:20"
   setup_commands:
     - "npm install"
   files_to_highlight:
