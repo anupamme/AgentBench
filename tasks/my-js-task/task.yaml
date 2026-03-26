@@ -1,0 +1,28 @@
+id: my-js-task
+version: 1
+metadata:
+  difficulty: medium
+  task_type: feature_add
+  languages: [javascript]
+  estimated_human_time_minutes: 15
+  tags: []
+  source: contributed
+setup:
+  repo: tasks/my-js-task/repo
+  commit: HEAD
+  setup_commands: []
+  files_to_highlight: []
+prompt: "TODO: Describe the task here."
+evaluation:
+  primary:
+    type: test_suite
+    command: "TODO: add test command"
+    pass_condition: "exit_code == 0"
+    label: primary_tests
+    timeout_seconds: 60
+  secondary: []
+constraints:
+  max_turns: 20
+  max_tokens: 50000
+  timeout_seconds: 300
+  network: false
