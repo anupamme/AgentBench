@@ -88,7 +88,7 @@ def validate(
 @app.command()
 def scaffold(
     id: str = typer.Option(..., help="Task ID (kebab-case, e.g. fix-null-pointer-bug)"),
-    task_type: str = typer.Option(..., help="Task type: bug_fix, feature_add, refactor, etc."),
+    task_type: str = typer.Option(..., "--type", help="Task type: bug_fix, feature_add, refactor, etc."),
     difficulty: str = typer.Option("medium", help="Difficulty: easy, medium, hard, expert"),
     language: str = typer.Option("python", help="Primary language: python or javascript"),
 ) -> None:

@@ -137,8 +137,7 @@ def scaffold_task(
         raise ValueError(f"Invalid task_type {task_type!r}. Must be one of: {valid}")
 
     if tasks_root is None:
-        # Default: tasks/ relative to repo root (two levels up from this file)
-        tasks_root = Path(__file__).parent.parent.parent.parent.parent / "tasks"
+        tasks_root = Path.cwd() / "tasks"
 
     task_dir = tasks_root / id
 
