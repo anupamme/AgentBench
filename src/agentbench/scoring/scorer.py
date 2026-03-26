@@ -43,8 +43,8 @@ class Scorer:
         4. Score process quality from trace event analysis
         5. Assemble and return TaskScore
         """
-        correctness = await self._score_correctness(task, sandbox, sandbox_manager)
         diff = await sandbox_manager.snapshot_diff(sandbox)
+        correctness = await self._score_correctness(task, sandbox, sandbox_manager, diff)
         quality = self._score_quality(task, sandbox_manager, diff, correctness)
         summary = trace.summary()
         efficiency = self._score_efficiency(summary, trace)
@@ -62,7 +62,7 @@ class Scorer:
         )
 
     async def _score_correctness(
-        self, task: TaskSpec, sandbox: Sandbox, sandbox_manager: SandboxManager,
+        self, task: TaskSpec, sandbox: Sandbox, sandbox_manager: SandboxManager, diff: FileDiff,
     ) -> CorrectnessResult:
         """
         Run the primary and secondary evaluation criteria.
@@ -90,7 +90,6 @@ class Scorer:
         secondary_results = []
         for criterion in task.evaluation.secondary:
             if criterion.type == EvalType.DIFF_SIZE:
-                diff = await sandbox_manager.snapshot_diff(sandbox)
                 total_changed = diff.total_lines_added + diff.total_lines_deleted
                 passed = total_changed <= (criterion.max_lines_changed or 999999)
                 secondary_results.append(SecondaryResult(
@@ -121,24 +120,25 @@ class Scorer:
         """
         Parse test output for partial credit.
 
-        Patterns to look for:
-        - pytest: "X passed, Y failed" → X / (X + Y)
-        - pytest: "X passed" (no failures) → 1.0
+        Patterns to look for (checked in order of specificity):
+        - pytest: "X passed, Y failed" or "Y failed, X passed" → X / (X + Y)
         - jest: "Tests: X passed, Y failed, Z total" → X / Z
+        - pytest: "X passed" with no failures present → 1.0
 
         Returns 0.0 if no pattern matches.
         """
-        # pytest pattern: "X passed, Y failed"
-        m = re.search(r"(\d+)\s+passed.*?(\d+)\s+failed", output)
+        # pytest: both orderings of passed/failed
+        m = re.search(r"(\d+)\s+passed[^,]*,\s*(\d+)\s+failed", output)
+        if not m:
+            m = re.search(r"(\d+)\s+failed[^,]*,\s*(\d+)\s+passed", output)
+            if m:
+                # swap so group(1)=passed, group(2)=failed
+                passed, failed = int(m.group(2)), int(m.group(1))
+                return passed / (passed + failed) if (passed + failed) > 0 else 0.0
         if m:
             passed = int(m.group(1))
             failed = int(m.group(2))
             return passed / (passed + failed) if (passed + failed) > 0 else 0.0
-
-        # pytest pattern: "X passed" (no failures)
-        m = re.search(r"(\d+)\s+passed", output)
-        if m:
-            return 1.0
 
         # jest pattern
         m = re.search(r"Tests:\s+(\d+)\s+passed.*?(\d+)\s+total", output)
@@ -146,6 +146,12 @@ class Scorer:
             passed = int(m.group(1))
             total = int(m.group(2))
             return passed / total if total > 0 else 0.0
+
+        # pytest: "X passed" only if no failures are mentioned
+        if "failed" not in output:
+            m = re.search(r"(\d+)\s+passed", output)
+            if m:
+                return 1.0
 
         return 0.0
 
@@ -167,11 +173,11 @@ class Scorer:
 
         for sr in correctness.secondary_results:
             if "lint" in sr.label.lower():
-                lint_clean = sr.passed
+                lint_clean &= sr.passed
             if "type" in sr.label.lower():
-                type_check_clean = sr.passed
+                type_check_clean &= sr.passed
             if "diff" in sr.label.lower():
-                diff_within_budget = sr.passed
+                diff_within_budget &= sr.passed
 
         return QualityResult(
             lint_clean=lint_clean,

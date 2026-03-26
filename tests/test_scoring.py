@@ -24,9 +24,20 @@ class TestParsePartialScore:
         output = "Tests: 8 passed, 2 failed, 10 total"
         assert scorer._parse_partial_score(output) == 0.8
 
+    def test_failed_before_passed(self):
+        scorer = Scorer()
+        output = "===== 1 failed, 5 passed in 0.5s ====="
+        assert scorer._parse_partial_score(output) == pytest.approx(5 / 6)
+
     def test_no_pattern_returns_zero(self):
         scorer = Scorer()
         assert scorer._parse_partial_score("random output") == 0.0
+
+    def test_passed_with_failures_in_output_not_false_positive(self):
+        scorer = Scorer()
+        # "5 passed" is present but so is "failed" — must not return 1.0
+        output = "1 failed, 5 passed in 0.5s"
+        assert scorer._parse_partial_score(output) == pytest.approx(5 / 6)
 
 
 class TestProcessScoring:
