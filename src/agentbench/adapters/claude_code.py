@@ -100,8 +100,14 @@ class ClaudeCodeAdapter(AgentAdapter):
         cwd = str(sandbox.host_workspace_path)
         cmd.extend(["--cwd", cwd])
 
+        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        if not api_key:
+            raise EnvironmentError(
+                "ANTHROPIC_API_KEY is not set. "
+                "Export it before running the Claude Code adapter."
+            )
         env = os.environ.copy()
-        env["ANTHROPIC_API_KEY"] = os.environ.get("ANTHROPIC_API_KEY", "")
+        env["ANTHROPIC_API_KEY"] = api_key
 
         proc = await asyncio.create_subprocess_exec(
             *cmd,
@@ -112,23 +118,40 @@ class ClaudeCodeAdapter(AgentAdapter):
         )
 
         assert proc.stdout is not None
+        assert proc.stderr is not None
 
         # Reset per-solve state
         self._last_tool_name = ""
 
-        # Read and parse stream-json output line by line
-        async for raw_line in proc.stdout:
-            line = raw_line.decode(errors="replace").strip()
-            if not line:
-                continue
-            event_data = self._parse_stream_json_line(line, trace)
-            if event_data:
-                msg_type = event_data.get("type", "")
-                if msg_type == "assistant":
-                    total_turns += 1
-                elif msg_type == "result":
-                    usage = event_data.get("usage", {})
-                    total_tokens += usage.get("input_tokens", 0) + usage.get("output_tokens", 0)
+        async def _drain_stdout() -> None:
+            async for raw_line in proc.stdout:  # type: ignore[union-attr]
+                line = raw_line.decode(errors="replace").strip()
+                if not line:
+                    continue
+                event_data = self._parse_stream_json_line(line, trace)
+                if event_data:
+                    msg_type = event_data.get("type", "")
+                    if msg_type == "assistant":
+                        nonlocal total_turns
+                        total_turns += 1
+                    elif msg_type == "result":
+                        usage = event_data.get("usage", {})
+                        nonlocal total_tokens
+                        total_tokens += (
+                            usage.get("input_tokens", 0) + usage.get("output_tokens", 0)
+                        )
+
+        async def _drain_stderr() -> str:
+            chunks: list[bytes] = []
+            async for chunk in proc.stderr:  # type: ignore[union-attr]
+                chunks.append(chunk)
+            return b"".join(chunks).decode(errors="replace").strip()
+
+        # Read stdout and stderr concurrently to prevent pipe-buffer deadlocks.
+        stdout_task = asyncio.create_task(_drain_stdout())
+        stderr_task = asyncio.create_task(_drain_stderr())
+        await asyncio.gather(stdout_task, stderr_task)
+        stderr_output = stderr_task.result()
 
         completed = False
         reason = "error"
@@ -143,7 +166,12 @@ class ClaudeCodeAdapter(AgentAdapter):
             else:
                 reason = "error"
                 error = f"claude exited with code {proc.returncode}"
-                trace.record(EventType.ERROR, {"message": error, "exit_code": proc.returncode})
+                if stderr_output:
+                    error += f": {stderr_output}"
+                trace.record(
+                    EventType.ERROR,
+                    {"message": error, "exit_code": proc.returncode, "stderr": stderr_output},
+                )
         except TimeoutError:
             proc.kill()
             await proc.wait()

@@ -99,6 +99,13 @@ class TestClaudeCodeAdapterBinaryDiscovery:
             adapter = ClaudeCodeAdapter()
             assert adapter._claude_path == "/usr/local/bin/claude"
 
+    async def test_missing_api_key_raises(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        with patch.object(ClaudeCodeAdapter, "_find_claude_binary", return_value="/usr/bin/claude"):
+            adapter = ClaudeCodeAdapter()
+        with pytest.raises(EnvironmentError, match="ANTHROPIC_API_KEY"):
+            await adapter.solve(_make_task(), _make_mock_sandbox(), MagicMock(), TraceCollector("r", "t", "claude-code"))
+
     def test_finds_via_local_path(self) -> None:
         with patch("shutil.which", return_value=None), \
              patch.object(Path, "exists", return_value=True):
@@ -216,6 +223,10 @@ class TestParseStreamJsonLine:
 # ---------------------------------------------------------------------------
 
 class TestClaudeCodeAdapterSolve:
+    @pytest.fixture(autouse=True)
+    def _set_api_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+
     async def test_solve_records_agent_start(self) -> None:
         with patch.object(ClaudeCodeAdapter, "_find_claude_binary", return_value="/usr/bin/claude"):
             adapter = ClaudeCodeAdapter(AgentConfig(model="test-model"))
