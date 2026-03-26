@@ -1,0 +1,38 @@
+id: "py-multi-rename-module"
+version: 1
+metadata:
+  difficulty: hard
+  task_type: multi_file_edit
+  languages: [python]
+  estimated_human_time_minutes: 25
+  tags: [python, refactor, imports, multi-file]
+  source: "synthetic"
+setup:
+  repo: "tasks/py-multi-rename-module/repo"
+  commit: "HEAD"
+  setup_commands:
+    - "pip install pytest"
+  files_to_highlight:
+    - "helpers.py"
+    - "app.py"
+    - "models.py"
+    - "tests/test_app.py"
+prompt: |
+  The module `helpers.py` needs to be renamed to `utils.py`. Update all files that
+  import from `helpers` to import from `utils` instead: `app.py`, `models.py`, and
+  `tests/test_app.py`. The tests in `tests/test_app.py` must pass after the rename.
+  Note: rename the file and update the imports — do not just add a `utils.py` alias.
+evaluation:
+  primary:
+    type: test_suite
+    command: "python -m pytest tests/test_app.py -v"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: diff_size
+      max_lines_changed: 20
+      label: "reasonable_diff"
+constraints:
+  max_turns: 20
+  max_tokens: 40000
+  timeout_seconds: 90
+  network: false

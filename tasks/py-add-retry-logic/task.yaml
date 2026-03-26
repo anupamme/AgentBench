@@ -1,0 +1,36 @@
+id: "py-add-retry-logic"
+version: 1
+metadata:
+  difficulty: medium
+  task_type: feature_add
+  languages: [python]
+  estimated_human_time_minutes: 15
+  tags: [python, retry, resilience]
+  source: "synthetic"
+setup:
+  repo: "tasks/py-add-retry-logic/repo"
+  commit: "HEAD"
+  setup_commands:
+    - "pip install pytest pytest-mock"
+  files_to_highlight:
+    - "client.py"
+    - "tests/test_client.py"
+prompt: |
+  The `fetch_data` function in `client.py` calls an external service once and
+  fails immediately on any error. Add retry logic so that it retries up to 3 times
+  on failure before raising the exception. Use `time.sleep(0)` between retries
+  (the tests mock `time.sleep`). The tests in `tests/test_client.py` should all pass.
+evaluation:
+  primary:
+    type: test_suite
+    command: "python -m pytest tests/test_client.py -v"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: lint
+      command: "python -m py_compile client.py"
+      label: "syntax_valid"
+constraints:
+  max_turns: 15
+  max_tokens: 30000
+  timeout_seconds: 90
+  network: false

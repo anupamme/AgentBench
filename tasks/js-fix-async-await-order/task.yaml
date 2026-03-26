@@ -1,0 +1,36 @@
+id: "js-fix-async-await-order"
+version: 1
+metadata:
+  difficulty: hard
+  task_type: bug_fix
+  languages: [javascript]
+  estimated_human_time_minutes: 20
+  tags: [javascript, async, await, race-condition]
+  source: "oss-adapted"
+setup:
+  repo: "tasks/js-fix-async-await-order/repo"
+  commit: "HEAD"
+  setup_commands:
+    - "npm install"
+  files_to_highlight:
+    - "src/checkout.js"
+    - "tests/checkout.test.js"
+prompt: |
+  The `processOrder` function in `src/checkout.js` awaits `validatePayment` but
+  forgets to await `updateInventory`, causing inventory to update after the
+  function returns. Add the missing `await` so both async operations complete
+  before the function resolves. The test 'inventory updated before return' must pass.
+evaluation:
+  primary:
+    type: test_suite
+    command: "npx jest --no-coverage"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: diff_size
+      max_lines_changed: 3
+      label: "minimal_diff"
+constraints:
+  max_turns: 20
+  max_tokens: 40000
+  timeout_seconds: 120
+  network: false

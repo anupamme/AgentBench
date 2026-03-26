@@ -1,0 +1,36 @@
+id: "py-expert-concurrent-queue"
+version: 1
+metadata:
+  difficulty: expert
+  task_type: test_generation
+  languages: [python]
+  estimated_human_time_minutes: 60
+  tags: [python, threading, queue, testing, expert]
+  source: "synthetic"
+setup:
+  repo: "tasks/py-expert-concurrent-queue/repo"
+  commit: "HEAD"
+  setup_commands:
+    - "pip install pytest pytest-cov"
+  files_to_highlight:
+    - "bounded_queue.py"
+    - "tests/test_bounded_queue.py"
+prompt: |
+  The `BoundedQueue` in `bounded_queue.py` is a thread-safe blocking queue. The
+  test file is empty. Write comprehensive tests covering: basic put/get, FIFO order,
+  blocking timeout (QueueFull, QueueEmpty), and multi-producer/consumer correctness.
+  Achieve at least 90% line coverage.
+evaluation:
+  primary:
+    type: test_suite
+    command: "python -m pytest tests/test_bounded_queue.py --cov=bounded_queue --cov-fail-under=90 -v"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: lint
+      command: "python -m py_compile tests/test_bounded_queue.py"
+      label: "syntax_valid"
+constraints:
+  max_turns: 30
+  max_tokens: 80000
+  timeout_seconds: 180
+  network: false

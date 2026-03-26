@@ -1,0 +1,38 @@
+id: "go-multi-add-http-middleware"
+version: 1
+metadata:
+  difficulty: hard
+  task_type: multi_file_edit
+  languages: [go]
+  estimated_human_time_minutes: 40
+  tags: [go, http, middleware, multi-file]
+  source: "synthetic"
+setup:
+  repo: "tasks/go-multi-add-http-middleware/repo"
+  commit: "HEAD"
+  setup_commands:
+    - "go test ./..."
+  files_to_highlight:
+    - "main.go"
+    - "handlers.go"
+    - "middleware_test.go"
+prompt: |
+  The HTTP server in `main.go` has no middleware. Add request ID middleware that
+  generates a short unique ID for each request and sets it as the `X-Request-ID`
+  response header. Create `middleware/requestid.go` with a `RequestID` function and
+  apply it in `main.go`. The test `TestRequestIDHeader` in `middleware_test.go`
+  must pass.
+evaluation:
+  primary:
+    type: test_suite
+    command: "go test ./... -v -timeout 30s"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: diff_size
+      max_lines_changed: 50
+      label: "reasonable_diff"
+constraints:
+  max_turns: 25
+  max_tokens: 60000
+  timeout_seconds: 120
+  network: false

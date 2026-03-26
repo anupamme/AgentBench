@@ -1,0 +1,40 @@
+id: "py-refactor-class-to-dataclass"
+version: 1
+metadata:
+  difficulty: medium
+  task_type: refactor
+  languages: [python]
+  estimated_human_time_minutes: 15
+  tags: [python, dataclass, refactor]
+  source: "oss-adapted"
+setup:
+  repo: "tasks/py-refactor-class-to-dataclass/repo"
+  commit: "HEAD"
+  setup_commands:
+    - "pip install pytest"
+  files_to_highlight:
+    - "models.py"
+    - "tests/test_models.py"
+prompt: |
+  The `Point` class in `models.py` manually implements `__init__`, `__repr__`, and
+  `__eq__`, but is missing `__hash__`, causing it to fail equality-based set/dict
+  operations. Refactor it to use `@dataclass(frozen=True)` which will auto-generate
+  all required methods including `__hash__`. All tests in `tests/test_models.py`
+  must pass.
+evaluation:
+  primary:
+    type: test_suite
+    command: "python -m pytest tests/test_models.py -v"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: lint
+      command: "python -m py_compile models.py"
+      label: "syntax_valid"
+    - type: diff_size
+      max_lines_changed: 20
+      label: "reasonable_diff"
+constraints:
+  max_turns: 15
+  max_tokens: 30000
+  timeout_seconds: 60
+  network: false

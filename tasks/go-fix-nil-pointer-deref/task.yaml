@@ -1,0 +1,36 @@
+id: "go-fix-nil-pointer-deref"
+version: 1
+metadata:
+  difficulty: easy
+  task_type: bug_fix
+  languages: [go]
+  estimated_human_time_minutes: 5
+  tags: [go, beginner, nil-check, pointers]
+  source: "synthetic"
+setup:
+  repo: "tasks/go-fix-nil-pointer-deref/repo"
+  commit: "HEAD"
+  setup_commands:
+    - "go test ./..."
+  files_to_highlight:
+    - "user.go"
+    - "user_test.go"
+prompt: |
+  The `GetEmail` function in `user.go` panics with a nil pointer dereference when
+  the user's `Contact` field is nil. Fix it so that it returns an empty string
+  when `Contact` is nil instead of panicking. The test `TestGetEmailNilContact`
+  in `user_test.go` should pass after your fix.
+evaluation:
+  primary:
+    type: test_suite
+    command: "go test ./..."
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: diff_size
+      max_lines_changed: 5
+      label: "minimal_diff"
+constraints:
+  max_turns: 10
+  max_tokens: 20000
+  timeout_seconds: 120
+  network: false

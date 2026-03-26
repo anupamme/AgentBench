@@ -1,0 +1,37 @@
+id: "py-expert-plugin-framework"
+version: 1
+metadata:
+  difficulty: expert
+  task_type: multi_file_edit
+  languages: [python]
+  estimated_human_time_minutes: 60
+  tags: [python, plugins, architecture, multi-file, expert]
+  source: "synthetic"
+setup:
+  repo: "tasks/py-expert-plugin-framework/repo"
+  commit: "HEAD"
+  setup_commands:
+    - "pip install pytest"
+  files_to_highlight:
+    - "pipeline.py"
+    - "tests/test_pipeline.py"
+prompt: |
+  The monolithic `Pipeline` class in `pipeline.py` hardcodes all processing steps.
+  Refactor it into a plugin-based system: create an abstract `Stage` base class in
+  `stage.py`, implement `DoubleStage` in `stages/double.py` and `FilterStage` in
+  `stages/filter.py`, and update `Pipeline` to accept a list of `Stage` objects.
+  All tests in `tests/test_pipeline.py` must pass.
+evaluation:
+  primary:
+    type: test_suite
+    command: "python -m pytest tests/test_pipeline.py -v"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: diff_size
+      max_lines_changed: 80
+      label: "reasonable_diff"
+constraints:
+  max_turns: 30
+  max_tokens: 80000
+  timeout_seconds: 120
+  network: false

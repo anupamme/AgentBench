@@ -1,0 +1,39 @@
+id: "py-add-auth-middleware"
+version: 1
+metadata:
+  difficulty: hard
+  task_type: feature_add
+  languages: [python]
+  estimated_human_time_minutes: 30
+  tags: [python, flask, authentication, middleware, jwt]
+  source: "synthetic"
+setup:
+  repo: "tasks/py-add-auth-middleware/repo"
+  commit: "HEAD"
+  setup_commands:
+    - "pip install flask pytest PyJWT"
+  files_to_highlight:
+    - "app.py"
+    - "tests/test_auth.py"
+prompt: |
+  The Flask app in `app.py` has a `/data` route with no authentication. Add a
+  `require_auth` decorator (in a new file `middleware.py`) that:
+  - Returns 401 if the `Authorization` header is missing
+  - Returns 403 if the token is invalid or expired
+  - Passes through to the route if the token is valid
+  Apply the decorator to the `/data` route. Use `PyJWT` with `SECRET_KEY = "test-secret"`.
+  All tests in `tests/test_auth.py` must pass.
+evaluation:
+  primary:
+    type: test_suite
+    command: "python -m pytest tests/test_auth.py -v"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: diff_size
+      max_lines_changed: 40
+      label: "reasonable_diff"
+constraints:
+  max_turns: 25
+  max_tokens: 60000
+  timeout_seconds: 120
+  network: false

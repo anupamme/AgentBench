@@ -1,0 +1,40 @@
+id: "py-fix-generator-exhaustion"
+version: 1
+metadata:
+  difficulty: hard
+  task_type: bug_fix
+  languages: [python]
+  estimated_human_time_minutes: 20
+  tags: [python, generators, iterators]
+  source: "synthetic"
+setup:
+  repo: "tasks/py-fix-generator-exhaustion/repo"
+  commit: "HEAD"
+  setup_commands:
+    - "pip install pytest"
+  files_to_highlight:
+    - "pipeline.py"
+    - "tests/test_pipeline.py"
+prompt: |
+  The `process` function in `pipeline.py` converts input data to a generator and
+  passes it to two consumer functions. However, the second consumer always receives
+  an empty sequence because generators are exhausted after the first consumer
+  reads them. Fix it so both consumers receive all the data. The test
+  `test_both_consumers_receive_data` must pass.
+evaluation:
+  primary:
+    type: test_suite
+    command: "python -m pytest tests/test_pipeline.py -v"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: lint
+      command: "python -m py_compile pipeline.py"
+      label: "syntax_valid"
+    - type: diff_size
+      max_lines_changed: 5
+      label: "minimal_diff"
+constraints:
+  max_turns: 20
+  max_tokens: 40000
+  timeout_seconds: 90
+  network: false

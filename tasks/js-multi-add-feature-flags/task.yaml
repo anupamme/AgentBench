@@ -1,0 +1,37 @@
+id: "js-multi-add-feature-flags"
+version: 1
+metadata:
+  difficulty: expert
+  task_type: multi_file_edit
+  languages: [javascript]
+  estimated_human_time_minutes: 50
+  tags: [javascript, feature-flags, multi-file, architecture, expert]
+  source: "synthetic"
+setup:
+  repo: "tasks/js-multi-add-feature-flags/repo"
+  commit: "HEAD"
+  setup_commands:
+    - "npm install"
+  files_to_highlight:
+    - "src/features.js"
+    - "src/app.js"
+    - "tests/features.test.js"
+prompt: |
+  The app in `src/app.js` has hardcoded feature flags as constants. Implement a
+  centralized `FeatureFlags` class in `src/features.js` with `isEnabled(flag)` and
+  `override(flag, value)` methods. Update `src/app.js` to use an instance of
+  `FeatureFlags` instead of constants. All tests in `tests/features.test.js` must pass.
+evaluation:
+  primary:
+    type: test_suite
+    command: "npx jest --no-coverage"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: diff_size
+      max_lines_changed: 40
+      label: "reasonable_diff"
+constraints:
+  max_turns: 30
+  max_tokens: 80000
+  timeout_seconds: 120
+  network: false

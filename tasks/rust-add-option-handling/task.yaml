@@ -1,0 +1,36 @@
+id: "rust-add-option-handling"
+version: 1
+metadata:
+  difficulty: medium
+  task_type: feature_add
+  languages: [rust]
+  estimated_human_time_minutes: 15
+  tags: [rust, option, error-handling]
+  source: "synthetic"
+setup:
+  repo: "tasks/rust-add-option-handling/repo"
+  commit: "HEAD"
+  setup_commands:
+    - "cargo test"
+  files_to_highlight:
+    - "src/lib.rs"
+    - "tests/integration_test.rs"
+prompt: |
+  The `find_user` function in `src/lib.rs` panics when the user is not found
+  because it uses `unwrap()`. Change the return type to `Option<User>` so that
+  it returns `None` instead of panicking. The test `test_find_missing_user` in
+  `tests/integration_test.rs` must pass.
+evaluation:
+  primary:
+    type: test_suite
+    command: "cargo test"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: diff_size
+      max_lines_changed: 10
+      label: "minimal_diff"
+constraints:
+  max_turns: 15
+  max_tokens: 30000
+  timeout_seconds: 120
+  network: false

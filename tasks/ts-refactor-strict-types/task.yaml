@@ -1,0 +1,36 @@
+id: "ts-refactor-strict-types"
+version: 1
+metadata:
+  difficulty: medium
+  task_type: refactor
+  languages: [typescript]
+  estimated_human_time_minutes: 20
+  tags: [typescript, strict, types, refactor]
+  source: "synthetic"
+setup:
+  repo: "tasks/ts-refactor-strict-types/repo"
+  commit: "HEAD"
+  setup_commands:
+    - "npm install"
+  files_to_highlight:
+    - "src/config.ts"
+    - "tsconfig.json"
+prompt: |
+  The `src/config.ts` file uses `any` types throughout. The `tsconfig.json` currently
+  has `strict: false`. Enable `strict: true` in tsconfig.json and replace all `any`
+  types in `src/config.ts` with proper typed interfaces so that `npx tsc --noEmit`
+  passes without errors. The Jest tests must also still pass.
+evaluation:
+  primary:
+    type: custom_script
+    command: "npx tsc --noEmit && npx jest --no-coverage"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: diff_size
+      max_lines_changed: 30
+      label: "reasonable_diff"
+constraints:
+  max_turns: 20
+  max_tokens: 40000
+  timeout_seconds: 180
+  network: false

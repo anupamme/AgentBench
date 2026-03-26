@@ -1,0 +1,37 @@
+id: "py-multi-add-model-routes"
+version: 1
+metadata:
+  difficulty: hard
+  task_type: multi_file_edit
+  languages: [python]
+  estimated_human_time_minutes: 40
+  tags: [python, flask, rest-api, multi-file, models]
+  source: "synthetic"
+setup:
+  repo: "tasks/py-multi-add-model-routes/repo"
+  commit: "HEAD"
+  setup_commands:
+    - "pip install flask pytest"
+  files_to_highlight:
+    - "models.py"
+    - "app.py"
+    - "tests/test_products.py"
+prompt: |
+  The Flask app has a `User` model and `/users` routes. Add a `Product` model
+  (with fields: id, name, price) to `models.py`, create a new `routes/products.py`
+  blueprint with GET /products and POST /products routes, and register it in `app.py`.
+  The pre-written tests in `tests/test_products.py` must all pass.
+evaluation:
+  primary:
+    type: test_suite
+    command: "python -m pytest tests/test_products.py -v"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: diff_size
+      max_lines_changed: 60
+      label: "reasonable_diff"
+constraints:
+  max_turns: 25
+  max_tokens: 60000
+  timeout_seconds: 120
+  network: false

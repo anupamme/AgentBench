@@ -1,0 +1,39 @@
+id: "py-fix-mutable-default-arg"
+version: 1
+metadata:
+  difficulty: medium
+  task_type: bug_fix
+  languages: [python]
+  estimated_human_time_minutes: 10
+  tags: [python, gotcha, mutable-default]
+  source: "oss-adapted"
+setup:
+  repo: "tasks/py-fix-mutable-default-arg/repo"
+  commit: "HEAD"
+  setup_commands:
+    - "pip install pytest"
+  files_to_highlight:
+    - "registry.py"
+    - "tests/test_registry.py"
+prompt: |
+  The `register` function in `registry.py` has a subtle bug: registrations in
+  separate calls share the same `tags` list, causing tags from one call to leak
+  into later calls. Fix the function so each registration gets its own independent
+  tags list. The test `test_isolated_tags` in `tests/test_registry.py` should pass.
+evaluation:
+  primary:
+    type: test_suite
+    command: "python -m pytest tests/test_registry.py -v"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: lint
+      command: "python -m py_compile registry.py"
+      label: "syntax_valid"
+    - type: diff_size
+      max_lines_changed: 5
+      label: "minimal_diff"
+constraints:
+  max_turns: 15
+  max_tokens: 30000
+  timeout_seconds: 60
+  network: false

@@ -1,0 +1,37 @@
+id: "py-test-gen-string-utils"
+version: 1
+metadata:
+  difficulty: medium
+  task_type: test_generation
+  languages: [python]
+  estimated_human_time_minutes: 20
+  tags: [python, testing, coverage]
+  source: "synthetic"
+setup:
+  repo: "tasks/py-test-gen-string-utils/repo"
+  commit: "HEAD"
+  setup_commands:
+    - "pip install pytest pytest-cov"
+  files_to_highlight:
+    - "string_utils.py"
+    - "tests/test_string_utils.py"
+prompt: |
+  The `string_utils.py` module contains five functions: `slugify`, `truncate`,
+  `camel_to_snake`, `pad_left`, and `remove_vowels`. The test file
+  `tests/test_string_utils.py` is currently empty. Write tests that achieve at
+  least 80% line coverage of `string_utils.py`. Run with:
+  `pytest --cov=string_utils --cov-fail-under=80`
+evaluation:
+  primary:
+    type: test_suite
+    command: "python -m pytest tests/test_string_utils.py --cov=string_utils --cov-fail-under=80 -v"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: lint
+      command: "python -m py_compile tests/test_string_utils.py"
+      label: "syntax_valid"
+constraints:
+  max_turns: 20
+  max_tokens: 40000
+  timeout_seconds: 90
+  network: false
