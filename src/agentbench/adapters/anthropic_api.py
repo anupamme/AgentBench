@@ -100,11 +100,31 @@ _TEST_KEYWORDS = ("pytest", "jest", "npm test", "python -m pytest", "go test", "
 
 
 class AnthropicAPIAdapter(AgentAdapter):
-    """Adapter that calls Claude via the Anthropic Messages API with tool use."""
+    """Adapter that calls Claude via the Anthropic Messages API with tool use.
 
-    def __init__(self, config: AgentConfig | None = None, api_key: str | None = None):
+    Supports two providers:
+    - Direct Anthropic API (default): set ANTHROPIC_API_KEY env var or pass api_key.
+    - AWS Bedrock: pass use_bedrock=True. Credentials are read from the standard AWS
+      env vars (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_DEFAULT_REGION) or from
+      ~/.aws/credentials. Pass aws_region to override the region.
+      Use a Bedrock model ID in AgentConfig, e.g.:
+        "us.anthropic.claude-sonnet-4-5-20251001-v1:0"
+    """
+
+    def __init__(
+        self,
+        config: AgentConfig | None = None,
+        api_key: str | None = None,
+        use_bedrock: bool = False,
+        aws_region: str | None = None,
+    ):
         super().__init__(config)
-        self._client = anthropic.AsyncAnthropic(api_key=api_key)
+        if use_bedrock:
+            self._client: anthropic.AsyncAnthropic | anthropic.AsyncAnthropicBedrock = (
+                anthropic.AsyncAnthropicBedrock(aws_region=aws_region)
+            )
+        else:
+            self._client = anthropic.AsyncAnthropic(api_key=api_key)
 
     def name(self) -> str:
         return "anthropic-api"
