@@ -10,6 +10,7 @@ metadata:
 setup:
   repo: "tasks/go-multi-add-http-middleware/repo"
   commit: "HEAD"
+  dockerfile: "golang:1.21-bullseye"
   setup_commands:
     - "go test ./..."
   files_to_highlight:

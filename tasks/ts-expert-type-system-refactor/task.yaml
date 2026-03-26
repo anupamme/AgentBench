@@ -10,6 +10,7 @@ metadata:
 setup:
   repo: "tasks/ts-expert-type-system-refactor/repo"
   commit: "HEAD"
+  dockerfile: "node:20-slim"
   setup_commands:
     - "npm install"
   files_to_highlight:

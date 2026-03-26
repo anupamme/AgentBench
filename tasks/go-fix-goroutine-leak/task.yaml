@@ -10,6 +10,7 @@ metadata:
 setup:
   repo: "tasks/go-fix-goroutine-leak/repo"
   commit: "HEAD"
+  dockerfile: "golang:1.21-bullseye"
   setup_commands:
     - "go mod download"
     - "go test ./..."

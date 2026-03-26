@@ -10,6 +10,7 @@ metadata:
 setup:
   repo: "tasks/js-multi-add-feature-flags/repo"
   commit: "HEAD"
+  dockerfile: "node:20-slim"
   setup_commands:
     - "npm install"
   files_to_highlight:
