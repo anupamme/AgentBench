@@ -19,8 +19,10 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     from agentbench.adapters.base import AgentConfig, AgentResult
+    from agentbench.classification.taxonomy import FailureClassification
     from agentbench.core.models import TaskSpec
     from agentbench.sandbox.manager import FileDiff
+    from agentbench.scoring.models import TaskScore
     from agentbench.trace.collector import TraceCollector
 
 
@@ -60,6 +62,15 @@ class RunStorage:
     def load_trace(self) -> TraceCollector:
         from agentbench.trace.collector import TraceCollector
         return TraceCollector.load(self.run_dir / "trace.json")
+
+    def save_score(self, score: TaskScore, failure: FailureClassification | None) -> Path:
+        path = self.run_dir / "score.json"
+        data: dict[str, Any] = {
+            **asdict(score),
+            "failure_category": failure.primary_category.value if failure else None,
+        }
+        path.write_text(json.dumps(data, indent=2, default=str))
+        return path
 
     def load_result(self) -> dict[str, Any]:
         return json.loads((self.run_dir / "result.json").read_text())  # type: ignore[no-any-return]
