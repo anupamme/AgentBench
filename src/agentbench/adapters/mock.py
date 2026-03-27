@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 class MockAdapter(AgentAdapter):
     """Adapter that replays a scripted sequence of actions."""
 
-    def __init__(self, script: list[dict[str, Any]], config: AgentConfig | None = None):
+    def __init__(self, script: list[dict[str, Any]] | None = None, config: AgentConfig | None = None):
         """
         Args:
             script: List of actions to execute in order.
@@ -37,7 +37,7 @@ class MockAdapter(AgentAdapter):
                 {"type": "done"}
         """
         super().__init__(config)
-        self._script = script
+        self._script = script if script is not None else []
 
     def name(self) -> str:
         return "mock"

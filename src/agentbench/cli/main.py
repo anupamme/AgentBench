@@ -55,6 +55,8 @@ def run(
         suite_path = P(suite)
         if not suite_path.exists():
             suite_path = P("tasks/suites") / f"{suite}.yaml"
+        if not suite_path.exists():
+            suite_path = P("tasks/.suites") / f"{suite}.yaml"
         try:
             tasks = loader.load_suite(suite_path)
         except TaskLoadError as e:
@@ -122,6 +124,8 @@ def experiment(
     suite_path = P(exp.suite)
     if not suite_path.exists():
         suite_path = P("tasks/suites") / f"{exp.suite}.yaml"
+    if not suite_path.exists():
+        suite_path = P("tasks/.suites") / f"{exp.suite}.yaml"
     try:
         tasks = loader.load_suite(suite_path)
     except TaskLoadError as e:
