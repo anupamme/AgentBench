@@ -1,0 +1,40 @@
+id: "py-add-csv-export"
+version: 1
+metadata:
+  difficulty: medium
+  task_type: feature_add
+  languages: [python]
+  estimated_human_time_minutes: 15
+  tags: [python, csv, feature]
+  source: "synthetic"
+setup:
+  repo: "tasks/py-add-csv-export/repo"
+  commit: "HEAD"
+  setup_commands:
+    - "pip install pytest"
+  files_to_highlight:
+    - "report.py"
+    - "tests/test_report.py"
+prompt: |
+  The `Report` class in `report.py` supports JSON export via `to_json()` but has
+  no CSV export. Add a `to_csv()` method that returns a string with a header row
+  and one data row per record, using comma separation. The tests
+  `test_to_csv_headers` and `test_to_csv_rows` in `tests/test_report.py` should
+  pass after your change.
+evaluation:
+  primary:
+    type: test_suite
+    command: "python -m pytest tests/test_report.py -v"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: lint
+      command: "python -m py_compile report.py"
+      label: "syntax_valid"
+    - type: diff_size
+      max_lines_changed: 15
+      label: "minimal_diff"
+constraints:
+  max_turns: 15
+  max_tokens: 30000
+  timeout_seconds: 60
+  network: false

@@ -1,0 +1,37 @@
+id: "js-refactor-callbacks-to-promises"
+version: 1
+metadata:
+  difficulty: medium
+  task_type: refactor
+  languages: [javascript]
+  estimated_human_time_minutes: 20
+  tags: [javascript, promises, async, refactor, callbacks]
+  source: "synthetic"
+setup:
+  repo: "tasks/js-refactor-callbacks-to-promises/repo"
+  commit: "HEAD"
+  dockerfile: "node:20"
+  setup_commands:
+    - "npm install"
+  files_to_highlight:
+    - "src/db.js"
+    - "tests/db.test.js"
+prompt: |
+  The `src/db.js` module uses nested callbacks for `connect`, `query`, and `close`.
+  Refactor it so each function returns a Promise instead of taking a callback.
+  Keep the same function names and behavior. All tests in `tests/db.test.js` use
+  async/await and must pass after your refactor.
+evaluation:
+  primary:
+    type: test_suite
+    command: "npx jest --no-coverage"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: diff_size
+      max_lines_changed: 25
+      label: "reasonable_diff"
+constraints:
+  max_turns: 20
+  max_tokens: 40000
+  timeout_seconds: 120
+  network: false

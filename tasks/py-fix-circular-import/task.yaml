@@ -1,0 +1,39 @@
+id: "py-fix-circular-import"
+version: 1
+metadata:
+  difficulty: hard
+  task_type: bug_fix
+  languages: [python]
+  estimated_human_time_minutes: 30
+  tags: [python, imports, circular-import, architecture]
+  source: "oss-adapted"
+setup:
+  repo: "tasks/py-fix-circular-import/repo"
+  commit: "HEAD"
+  setup_commands:
+    - "pip install pytest"
+  files_to_highlight:
+    - "models.py"
+    - "utils.py"
+    - "app.py"
+    - "tests/test_app.py"
+prompt: |
+  The codebase has a circular import: `models.py` imports from `utils.py`, and
+  `utils.py` imports from `models.py`. This causes an `ImportError` when running
+  the tests. Fix the circular dependency by moving the shared constant
+  `DEFAULT_ROLE` into a new file `constants.py`, then update both `models.py`
+  and `utils.py` to import from `constants.py` instead.
+evaluation:
+  primary:
+    type: test_suite
+    command: "python -m pytest tests/test_app.py -v"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: diff_size
+      max_lines_changed: 20
+      label: "reasonable_diff"
+constraints:
+  max_turns: 20
+  max_tokens: 40000
+  timeout_seconds: 90
+  network: false

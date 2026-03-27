@@ -1,0 +1,37 @@
+id: "py-expert-async-pipeline"
+version: 1
+metadata:
+  difficulty: expert
+  task_type: feature_add
+  languages: [python]
+  estimated_human_time_minutes: 60
+  tags: [python, asyncio, pipeline, expert]
+  source: "synthetic"
+setup:
+  repo: "tasks/py-expert-async-pipeline/repo"
+  commit: "HEAD"
+  setup_commands:
+    - "pip install pytest pytest-asyncio"
+  files_to_highlight:
+    - "pipeline.py"
+    - "tests/test_pipeline.py"
+prompt: |
+  The synchronous `Pipeline` class exists in `pipeline.py`. Add an `AsyncPipeline`
+  class to the same file that accepts a list of async stage functions and processes
+  all input items concurrently using `asyncio.gather`. Each item passes through
+  all stages in sequence, but all items run in parallel. All tests in
+  `tests/test_pipeline.py` must pass.
+evaluation:
+  primary:
+    type: test_suite
+    command: "python -m pytest tests/test_pipeline.py -v"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: lint
+      command: "python -m py_compile pipeline.py"
+      label: "syntax_valid"
+constraints:
+  max_turns: 30
+  max_tokens: 80000
+  timeout_seconds: 120
+  network: false

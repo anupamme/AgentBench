@@ -1,0 +1,12 @@
+{
+  "name": "ts-expert-type-system-refactor",
+  "version": "1.0.0",
+  "scripts": { "test": "jest", "typecheck": "tsc --noEmit" },
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "ts-jest": "^29.0.0",
+    "typescript": "^5.0.0",
+    "@types/jest": "^29.0.0"
+  },
+  "jest": { "preset": "ts-jest", "testEnvironment": "node" }
+}

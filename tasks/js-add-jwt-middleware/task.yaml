@@ -1,0 +1,38 @@
+id: "js-add-jwt-middleware"
+version: 1
+metadata:
+  difficulty: hard
+  task_type: feature_add
+  languages: [javascript]
+  estimated_human_time_minutes: 30
+  tags: [javascript, jwt, authentication, middleware]
+  source: "synthetic"
+setup:
+  repo: "tasks/js-add-jwt-middleware/repo"
+  commit: "HEAD"
+  dockerfile: "node:20"
+  setup_commands:
+    - "npm install"
+  files_to_highlight:
+    - "src/app.js"
+    - "tests/middleware.test.js"
+prompt: |
+  The app in `src/app.js` has a `/data` route with no authentication. Create
+  `src/middleware/auth.js` that exports an `authMiddleware` function which returns
+  401 when the Authorization header is missing, 403 for invalid tokens, and calls
+  next() for valid tokens. Apply it to the `/data` route. Use `jsonwebtoken` with
+  SECRET = 'test-secret'. All tests in `tests/middleware.test.js` must pass.
+evaluation:
+  primary:
+    type: test_suite
+    command: "npx jest --no-coverage"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: diff_size
+      max_lines_changed: 40
+      label: "reasonable_diff"
+constraints:
+  max_turns: 25
+  max_tokens: 60000
+  timeout_seconds: 120
+  network: false

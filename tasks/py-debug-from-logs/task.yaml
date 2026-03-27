@@ -1,0 +1,40 @@
+id: "py-debug-from-logs"
+version: 1
+metadata:
+  difficulty: hard
+  task_type: debug_from_logs
+  languages: [python]
+  estimated_human_time_minutes: 25
+  tags: [python, debugging, batch-processing, off-by-one]
+  source: "synthetic"
+setup:
+  repo: "tasks/py-debug-from-logs/repo"
+  commit: "HEAD"
+  setup_commands:
+    - "pip install pytest"
+  files_to_highlight:
+    - "processor.py"
+    - "crash.log"
+    - "tests/test_processor.py"
+prompt: |
+  The `batch_process` function in `processor.py` has a bug that only appears when
+  the number of items is an exact multiple of the batch size. Examine `crash.log`
+  to understand the failure pattern, then fix the off-by-one error in
+  `processor.py`. The test `test_process_exact_batch` must pass.
+evaluation:
+  primary:
+    type: test_suite
+    command: "python -m pytest tests/test_processor.py -v"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: lint
+      command: "python -m py_compile processor.py"
+      label: "syntax_valid"
+    - type: diff_size
+      max_lines_changed: 5
+      label: "minimal_diff"
+constraints:
+  max_turns: 20
+  max_tokens: 40000
+  timeout_seconds: 90
+  network: false

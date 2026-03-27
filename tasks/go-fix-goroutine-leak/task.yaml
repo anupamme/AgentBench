@@ -1,0 +1,38 @@
+id: "go-fix-goroutine-leak"
+version: 1
+metadata:
+  difficulty: medium
+  task_type: bug_fix
+  languages: [go]
+  estimated_human_time_minutes: 20
+  tags: [go, goroutines, channels, concurrency]
+  source: "oss-adapted"
+setup:
+  repo: "tasks/go-fix-goroutine-leak/repo"
+  commit: "HEAD"
+  dockerfile: "golang:1.21-bullseye"
+  setup_commands:
+    - "go mod download"
+    - "go test -run='^$' ./..."
+  files_to_highlight:
+    - "worker.go"
+    - "worker_test.go"
+prompt: |
+  The `Worker` in `worker.go` starts a goroutine that reads from a channel, but
+  `Stop()` never signals that goroutine to exit, causing a goroutine leak. Fix
+  `Stop()` so the background goroutine terminates cleanly. The test
+  `TestWorkerNoLeak` detects leaked goroutines and must pass.
+evaluation:
+  primary:
+    type: test_suite
+    command: "go test ./... -v -timeout 30s"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: diff_size
+      max_lines_changed: 15
+      label: "minimal_diff"
+constraints:
+  max_turns: 20
+  max_tokens: 40000
+  timeout_seconds: 120
+  network: false

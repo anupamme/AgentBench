@@ -1,0 +1,18 @@
+name: quick-v1
+description: Quick benchmark suite — 10 representative tasks for fast iteration
+version: 1
+tasks:
+  # 2 easy
+  - path: ../calc-fix-division-by-zero/task.yaml
+  - path: ../js-fix-undefined-property/task.yaml
+  # 4 medium
+  - path: ../py-fix-mutable-default-arg/task.yaml
+  - path: ../py-add-retry-logic/task.yaml
+  - path: ../go-fix-goroutine-leak/task.yaml
+  - path: ../js-fix-promise-rejection/task.yaml
+  # 3 hard
+  - path: ../py-fix-race-condition/task.yaml
+  - path: ../py-multi-rename-module/task.yaml
+  - path: ../js-add-jwt-middleware/task.yaml
+  # 1 expert
+  - path: ../adv-misleading-error-location/task.yaml

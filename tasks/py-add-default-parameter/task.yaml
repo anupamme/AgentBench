@@ -1,0 +1,40 @@
+id: "py-add-default-parameter"
+version: 1
+metadata:
+  difficulty: easy
+  task_type: feature_add
+  languages: [python]
+  estimated_human_time_minutes: 3
+  tags: [python, beginner, default-args]
+  source: "synthetic"
+setup:
+  repo: "tasks/py-add-default-parameter/repo"
+  commit: "HEAD"
+  setup_commands:
+    - "pip install pytest"
+  files_to_highlight:
+    - "formatter.py"
+    - "tests/test_formatter.py"
+prompt: |
+  The `format_number` function in `formatter.py` requires callers to always pass
+  a `decimals` argument, but all callers use `2`. Add a default value of `2` for
+  the `decimals` parameter so it becomes optional. The test
+  `test_format_number_default_decimals` in `tests/test_formatter.py` should pass
+  after your change.
+evaluation:
+  primary:
+    type: test_suite
+    command: "python -m pytest tests/test_formatter.py -v"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: lint
+      command: "python -m py_compile formatter.py"
+      label: "syntax_valid"
+    - type: diff_size
+      max_lines_changed: 2
+      label: "minimal_diff"
+constraints:
+  max_turns: 10
+  max_tokens: 20000
+  timeout_seconds: 60
+  network: false

@@ -1,0 +1,38 @@
+id: "py-expert-debug-memory-leak"
+version: 1
+metadata:
+  difficulty: expert
+  task_type: debug_from_logs
+  languages: [python]
+  estimated_human_time_minutes: 60
+  tags: [python, memory, weakref, gc, expert]
+  source: "adversarial"
+setup:
+  repo: "tasks/py-expert-debug-memory-leak/repo"
+  commit: "HEAD"
+  setup_commands:
+    - "pip install pytest"
+  files_to_highlight:
+    - "event_bus.py"
+    - "crash.log"
+    - "tests/test_event_bus.py"
+prompt: |
+  The `EventBus` in `event_bus.py` holds strong references to subscriber callbacks,
+  preventing garbage collection of subscriber objects. Examine `crash.log` to
+  understand the leak pattern. Fix `EventBus` to use weak references so that when
+  a subscriber object is deleted, it is automatically removed from the bus.
+  The test `test_subscriber_gc` verifies the fix using weakref.
+evaluation:
+  primary:
+    type: test_suite
+    command: "python -m pytest tests/test_event_bus.py -v"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: lint
+      command: "python -m py_compile event_bus.py"
+      label: "syntax_valid"
+constraints:
+  max_turns: 30
+  max_tokens: 80000
+  timeout_seconds: 120
+  network: false

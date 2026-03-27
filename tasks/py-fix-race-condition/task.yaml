@@ -1,0 +1,40 @@
+id: "py-fix-race-condition"
+version: 1
+metadata:
+  difficulty: hard
+  task_type: bug_fix
+  languages: [python]
+  estimated_human_time_minutes: 25
+  tags: [python, threading, concurrency, race-condition]
+  source: "synthetic"
+setup:
+  repo: "tasks/py-fix-race-condition/repo"
+  commit: "HEAD"
+  setup_commands:
+    - "pip install pytest"
+  files_to_highlight:
+    - "counter.py"
+    - "tests/test_counter.py"
+prompt: |
+  The `Counter` class in `counter.py` is not thread-safe: multiple threads
+  incrementing it concurrently produce a final value less than expected due to
+  a race condition on `self._value`. Add a `threading.Lock` to protect the
+  increment operation. The test `test_concurrent_increment` spawns 100 threads
+  and must produce exactly 10000.
+evaluation:
+  primary:
+    type: test_suite
+    command: "python -m pytest tests/test_counter.py -v"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: lint
+      command: "python -m py_compile counter.py"
+      label: "syntax_valid"
+    - type: diff_size
+      max_lines_changed: 8
+      label: "minimal_diff"
+constraints:
+  max_turns: 20
+  max_tokens: 40000
+  timeout_seconds: 120
+  network: false

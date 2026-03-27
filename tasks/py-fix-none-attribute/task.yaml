@@ -1,0 +1,39 @@
+id: "py-fix-none-attribute"
+version: 1
+metadata:
+  difficulty: easy
+  task_type: bug_fix
+  languages: [python]
+  estimated_human_time_minutes: 3
+  tags: [python, beginner, null-check]
+  source: "synthetic"
+setup:
+  repo: "tasks/py-fix-none-attribute/repo"
+  commit: "HEAD"
+  setup_commands:
+    - "pip install pytest"
+  files_to_highlight:
+    - "user.py"
+    - "tests/test_user.py"
+prompt: |
+  The `get_display_name` method in `user.py` crashes with an `AttributeError` when
+  a user has no profile. Fix it so that it returns the username when `profile` is
+  `None`. The test `test_display_name_no_profile` in `tests/test_user.py` should
+  pass after your fix.
+evaluation:
+  primary:
+    type: test_suite
+    command: "python -m pytest tests/test_user.py -v"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: lint
+      command: "python -m py_compile user.py"
+      label: "syntax_valid"
+    - type: diff_size
+      max_lines_changed: 3
+      label: "minimal_diff"
+constraints:
+  max_turns: 10
+  max_tokens: 20000
+  timeout_seconds: 60
+  network: false

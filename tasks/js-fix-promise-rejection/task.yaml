@@ -1,0 +1,37 @@
+id: "js-fix-promise-rejection"
+version: 1
+metadata:
+  difficulty: medium
+  task_type: bug_fix
+  languages: [javascript]
+  estimated_human_time_minutes: 10
+  tags: [javascript, promises, async, error-handling]
+  source: "oss-adapted"
+setup:
+  repo: "tasks/js-fix-promise-rejection/repo"
+  commit: "HEAD"
+  dockerfile: "node:20"
+  setup_commands:
+    - "npm install"
+  files_to_highlight:
+    - "src/api.js"
+    - "tests/api.test.js"
+prompt: |
+  The `fetchUser` function in `src/api.js` does not handle rejected promises —
+  when the fetch fails, the error propagates as an unhandled rejection instead of
+  returning null. Wrap the fetch call in a try/catch so that any error results in
+  a null return value. The test 'returns null on fetch failure' should pass.
+evaluation:
+  primary:
+    type: test_suite
+    command: "npx jest --no-coverage"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: diff_size
+      max_lines_changed: 8
+      label: "minimal_diff"
+constraints:
+  max_turns: 15
+  max_tokens: 30000
+  timeout_seconds: 120
+  network: false

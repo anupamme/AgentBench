@@ -1,0 +1,38 @@
+id: "py-add-lru-cache-impl"
+version: 1
+metadata:
+  difficulty: hard
+  task_type: feature_add
+  languages: [python]
+  estimated_human_time_minutes: 30
+  tags: [python, data-structures, lru-cache, algorithms]
+  source: "synthetic"
+setup:
+  repo: "tasks/py-add-lru-cache-impl/repo"
+  commit: "HEAD"
+  setup_commands:
+    - "pip install pytest"
+  files_to_highlight:
+    - "cache.py"
+    - "tests/test_cache.py"
+prompt: |
+  The `LRUCache` class in `cache.py` has skeleton `get` and `put` methods that
+  raise `NotImplementedError`. Implement it using `collections.OrderedDict` so
+  that:
+  - `get(key)` returns the value or -1 if not present, moving the key to most-recently-used
+  - `put(key, value)` adds/updates the entry and evicts the least-recently-used item when over capacity
+  All tests in `tests/test_cache.py` must pass.
+evaluation:
+  primary:
+    type: test_suite
+    command: "python -m pytest tests/test_cache.py -v"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: lint
+      command: "python -m py_compile cache.py"
+      label: "syntax_valid"
+constraints:
+  max_turns: 25
+  max_tokens: 50000
+  timeout_seconds: 90
+  network: false

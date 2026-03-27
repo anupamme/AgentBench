@@ -1,0 +1,45 @@
+id: "adv-misleading-error-location"
+version: 1
+metadata:
+  difficulty: expert
+  task_type: bug_fix
+  languages: [python]
+  estimated_human_time_minutes: 45
+  tags: [python, adversarial, debugging, misleading-error]
+  source: "adversarial"
+setup:
+  repo: "tasks/adv-misleading-error-location/repo"
+  commit: "HEAD"
+  setup_commands:
+    - "pip install pytest"
+  files_to_highlight:
+    - "config_loader.py"
+    - "validator.py"
+    - "tests/test_pipeline.py"
+prompt: |
+  Running the tests produces this traceback:
+
+    File "validator.py", line 12, in validate_config
+      if config["timeout"] < 0:
+  TypeError: '<' not supported between instances of 'str' and 'int'
+
+  The traceback points to `validator.py`, but the real bug is elsewhere.
+  Find and fix the root cause. Do NOT modify `validator.py`.
+  All tests in `tests/test_pipeline.py` must pass.
+evaluation:
+  primary:
+    type: test_suite
+    command: "python -m pytest tests/test_pipeline.py -v"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: lint
+      command: "python -m py_compile config_loader.py"
+      label: "syntax_valid"
+    - type: diff_size
+      max_lines_changed: 5
+      label: "minimal_diff"
+constraints:
+  max_turns: 25
+  max_tokens: 60000
+  timeout_seconds: 90
+  network: false

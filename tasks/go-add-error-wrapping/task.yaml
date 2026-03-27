@@ -1,0 +1,38 @@
+id: "go-add-error-wrapping"
+version: 1
+metadata:
+  difficulty: medium
+  task_type: feature_add
+  languages: [go]
+  estimated_human_time_minutes: 15
+  tags: [go, errors, wrapping, errors.Is]
+  source: "synthetic"
+setup:
+  repo: "tasks/go-add-error-wrapping/repo"
+  commit: "HEAD"
+  dockerfile: "golang:1.21-bullseye"
+  setup_commands:
+    - "go test -run='^$' ./..."
+  files_to_highlight:
+    - "storage.go"
+    - "storage_test.go"
+prompt: |
+  The `FindUser` function in `storage.go` wraps its error using `fmt.Errorf` with
+  `%v`, which creates an opaque error string. Callers that use `errors.Is` to check
+  for `ErrNotFound` get `false` even though the error originated from `ErrNotFound`.
+  Fix the error wrapping so that `errors.Is(err, ErrNotFound)` returns true.
+  The tests `TestFindUserNotFound` and `TestNotFoundWrapped` must pass.
+evaluation:
+  primary:
+    type: test_suite
+    command: "go test ./... -v"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: diff_size
+      max_lines_changed: 5
+      label: "minimal_diff"
+constraints:
+  max_turns: 15
+  max_tokens: 30000
+  timeout_seconds: 60
+  network: false

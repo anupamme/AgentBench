@@ -1,0 +1,39 @@
+id: "ts-expert-type-system-refactor"
+version: 1
+metadata:
+  difficulty: expert
+  task_type: multi_file_edit
+  languages: [typescript]
+  estimated_human_time_minutes: 60
+  tags: [typescript, strict, types, expert, multi-file]
+  source: "synthetic"
+setup:
+  repo: "tasks/ts-expert-type-system-refactor/repo"
+  commit: "HEAD"
+  dockerfile: "node:20"
+  setup_commands:
+    - "npm install"
+  files_to_highlight:
+    - "src/models.ts"
+    - "src/api.ts"
+    - "tsconfig.json"
+prompt: |
+  The TypeScript codebase has `strict: false` and uses `any` throughout. Enable
+  `strict: true` in `tsconfig.json` and fix all resulting type errors in
+  `src/models.ts` and `src/api.ts` by replacing `any` with proper typed interfaces.
+  Runtime behavior must not change. `npx tsc --noEmit` must pass with zero errors,
+  and the Jest tests must still pass.
+evaluation:
+  primary:
+    type: custom_script
+    command: "npx tsc --noEmit && npx jest --no-coverage"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: diff_size
+      max_lines_changed: 40
+      label: "reasonable_diff"
+constraints:
+  max_turns: 30
+  max_tokens: 80000
+  timeout_seconds: 180
+  network: false

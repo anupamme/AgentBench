@@ -1,0 +1,37 @@
+id: "js-add-input-validation"
+version: 1
+metadata:
+  difficulty: medium
+  task_type: feature_add
+  languages: [javascript]
+  estimated_human_time_minutes: 15
+  tags: [javascript, express, validation, rest-api]
+  source: "synthetic"
+setup:
+  repo: "tasks/js-add-input-validation/repo"
+  commit: "HEAD"
+  dockerfile: "node:20"
+  setup_commands:
+    - "npm install"
+  files_to_highlight:
+    - "src/userController.js"
+    - "tests/userController.test.js"
+prompt: |
+  The `createUser` handler in `src/userController.js` accepts any request body
+  without validation. Add input validation that returns HTTP 400 with an error
+  message when `name` or `email` is missing from the request body.
+  The tests for missing fields in `tests/userController.test.js` should pass.
+evaluation:
+  primary:
+    type: test_suite
+    command: "npx jest --no-coverage"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: diff_size
+      max_lines_changed: 10
+      label: "minimal_diff"
+constraints:
+  max_turns: 15
+  max_tokens: 30000
+  timeout_seconds: 120
+  network: false

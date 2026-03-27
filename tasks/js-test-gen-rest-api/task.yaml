@@ -1,0 +1,38 @@
+id: "js-test-gen-rest-api"
+version: 1
+metadata:
+  difficulty: medium
+  task_type: test_generation
+  languages: [javascript]
+  estimated_human_time_minutes: 25
+  tags: [javascript, testing, rest-api, jest]
+  source: "synthetic"
+setup:
+  repo: "tasks/js-test-gen-rest-api/repo"
+  commit: "HEAD"
+  dockerfile: "node:20"
+  setup_commands:
+    - "npm install"
+  files_to_highlight:
+    - "src/app.js"
+    - "tests/app.test.js"
+prompt: |
+  The Express app in `src/app.js` has three routes: GET /users, POST /users, and
+  DELETE /users/:id. The test file `tests/app.test.js` is empty. Write tests for
+  all three routes covering happy-path and edge cases (e.g. deleting a non-existent
+  user). Use the `makeRequest` helper already defined in the test file skeleton.
+  All tests must pass.
+evaluation:
+  primary:
+    type: test_suite
+    command: "npx jest --no-coverage"
+    pass_condition: "exit_code == 0"
+  secondary:
+    - type: lint
+      command: "node --check tests/app.test.js"
+      label: "syntax_valid"
+constraints:
+  max_turns: 20
+  max_tokens: 40000
+  timeout_seconds: 120
+  network: false

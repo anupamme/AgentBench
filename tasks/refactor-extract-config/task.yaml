@@ -30,17 +30,13 @@ prompt: |
   All existing tests in `tests/test_processor.py` must continue to pass.
 evaluation:
   primary:
-    type: test_suite
-    command: "python -m pytest tests/test_processor.py -v"
+    type: custom_script
+    command: "python -m pytest tests/test_processor.py -v && python -c \"import sys; files=['db.py','api_client.py','processor.py']; hardcoded=['postgres://','sk-test-','TIMEOUT = 30','BATCH_SIZE = 100']; found=[h for f in files for h in hardcoded if h in open(f).read()]; sys.exit(1 if found else 0)\""
     pass_condition: "exit_code == 0"
   secondary:
     - type: lint
       command: "python -m py_compile config.py db.py api_client.py processor.py"
       label: "syntax_valid"
-    - type: custom_script
-      command: "python -c \"import ast, sys; files=['db.py','api_client.py','processor.py']; hardcoded=['postgres://','sk-test-','TIMEOUT = 30','BATCH_SIZE = 100']; found=[h for f in files for h in hardcoded if h in open(f).read()]; sys.exit(1 if found else 0)\""
-      pass_condition: "exit_code == 0"
-      label: "no_hardcoded_values"
     - type: diff_size
       max_lines_changed: 30
       label: "reasonable_diff"
