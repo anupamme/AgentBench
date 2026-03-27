@@ -19,6 +19,8 @@ def run(
     model: str = typer.Option("claude-sonnet-4-20250514", help="Model to use"),
     parallelism: int = typer.Option(1, help="Number of parallel runs"),
     output: str = typer.Option("results/", help="Output directory"),
+    bedrock: bool = typer.Option(False, "--bedrock/--no-bedrock", help="Use AWS Bedrock"),
+    aws_region: str | None = typer.Option(None, "--aws-region", help="AWS region for Bedrock"),
 ) -> None:
     """Run evaluation tasks against an agent."""
     import asyncio
@@ -69,7 +71,12 @@ def run(
         raise typer.Exit(code=1)
 
     # Create adapter
-    config = AgentConfig(model=model)
+    extra: dict = {}
+    if bedrock:
+        extra["use_bedrock"] = True
+    if aws_region:
+        extra["aws_region"] = aws_region
+    config = AgentConfig(model=model, extra=extra)
     try:
         adapter_instance = get_adapter(agent, config)
     except Exception as e:
