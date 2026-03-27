@@ -62,8 +62,9 @@ class ClaudeCodeAdapter(AgentAdapter):
         aws_region: str | None = None,
     ):
         super().__init__(config)
-        self._use_bedrock = use_bedrock
-        self._aws_region = aws_region
+        extra = self.config.extra
+        self._use_bedrock = use_bedrock or bool(extra.get("use_bedrock", False))
+        self._aws_region = aws_region or extra.get("aws_region")
         self._claude_path = self._find_claude_binary()
         # Tracks the most recently seen tool name to correlate tool_result events
         self._last_tool_name: str = ""

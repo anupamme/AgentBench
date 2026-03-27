@@ -14,9 +14,10 @@ def test_cli_help():
     assert "agentbench" in result.stdout.lower() or "eval" in result.stdout.lower()
 
 
-def test_run_not_implemented():
+def test_run_requires_task_or_suite():
     result = runner.invoke(app, ["run", "--agent", "test"])
-    assert "not yet implemented" in result.stdout.lower()
+    assert result.exit_code != 0
+    assert "task" in result.stdout.lower() or "suite" in result.stdout.lower()
 
 
 def test_validate_missing_file():

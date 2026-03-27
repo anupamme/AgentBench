@@ -121,9 +121,14 @@ class AnthropicAPIAdapter(AgentAdapter):
         aws_region: str | None = None,
     ):
         super().__init__(config)
-        if use_bedrock:
+        # Allow use_bedrock / aws_region to come from config.extra when instantiated
+        # via the registry (which only passes config=).
+        extra = self.config.extra
+        _use_bedrock = use_bedrock or bool(extra.get("use_bedrock", False))
+        _aws_region = aws_region or extra.get("aws_region")
+        if _use_bedrock:
             self._client: anthropic.AsyncAnthropic | anthropic.AsyncAnthropicBedrock = (
-                anthropic.AsyncAnthropicBedrock(aws_region=aws_region)
+                anthropic.AsyncAnthropicBedrock(aws_region=_aws_region)
             )
         else:
             self._client = anthropic.AsyncAnthropic(api_key=api_key)
