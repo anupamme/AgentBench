@@ -13,23 +13,166 @@ console = Console()
 
 @app.command()
 def run(
-    task: str | None = typer.Option(None, help="Single task ID to run"),
-    suite: str | None = typer.Option(None, help="Task suite to run"),
-    agent: str = typer.Option(..., help="Agent adapter to use"),
+    task: str | None = typer.Option(None, help="Single task ID or path to task YAML"),
+    suite: str | None = typer.Option(None, help="Suite name or path to suite YAML"),
+    agent: str = typer.Option(..., help="Agent adapter name"),
     model: str = typer.Option("claude-sonnet-4-20250514", help="Model to use"),
     parallelism: int = typer.Option(1, help="Number of parallel runs"),
     output: str = typer.Option("results/", help="Output directory"),
 ) -> None:
     """Run evaluation tasks against an agent."""
-    console.print("[yellow]run command not yet implemented[/yellow]")
+    import asyncio
+    from pathlib import Path as P
+
+    from agentbench.adapters.base import AgentConfig
+    from agentbench.adapters.registry import get_adapter
+    from agentbench.core.orchestrator import Orchestrator
+    from agentbench.core.task_loader import TaskLoader, TaskLoadError
+
+    loader = TaskLoader()
+
+    # Load tasks
+    if task:
+        task_path = P(task)
+        if task_path.suffix in (".yaml", ".yml"):
+            try:
+                tasks = [loader.load_task(task_path)]
+            except TaskLoadError as e:
+                console.print(f"[red]Failed to load task {task_path}:[/red]")
+                for err in e.errors:
+                    console.print(f"  [red]• {err}[/red]")
+                raise typer.Exit(code=1) from None
+        else:
+            task_path = P("tasks") / task / "task.yaml"
+            try:
+                tasks = [loader.load_task(task_path)]
+            except TaskLoadError as e:
+                console.print(f"[red]Failed to load task '{task}':[/red]")
+                for err in e.errors:
+                    console.print(f"  [red]• {err}[/red]")
+                raise typer.Exit(code=1) from None
+    elif suite:
+        suite_path = P(suite)
+        if not suite_path.exists():
+            suite_path = P("tasks/suites") / f"{suite}.yaml"
+        try:
+            tasks = loader.load_suite(suite_path)
+        except TaskLoadError as e:
+            console.print(f"[red]Failed to load suite '{suite}':[/red]")
+            for err in e.errors:
+                console.print(f"  [red]• {err}[/red]")
+            raise typer.Exit(code=1) from None
+    else:
+        console.print("[red]Must specify either --task or --suite[/red]")
+        raise typer.Exit(code=1)
+
+    # Create adapter
+    config = AgentConfig(model=model)
+    try:
+        adapter_instance = get_adapter(agent, config)
+    except Exception as e:
+        console.print(f"[red]Failed to load adapter '{agent}': {e}[/red]")
+        raise typer.Exit(code=1) from None
+
+    # Run
+    orchestrator = Orchestrator(output_dir=P(output))
+    results = asyncio.run(orchestrator.run_suite(tasks, adapter_instance, parallelism))
+
+    # Print summary
+    passed = sum(1 for r in results if r.score and r.score.overall_pass)
+    total = len(results)
+    console.print(f"\n[bold]Results: {passed}/{total} passed[/bold]")
+    for r in results:
+        status = "[green]✓[/green]" if (r.score and r.score.overall_pass) else "[red]✗[/red]"
+        failure_info = ""
+        if r.failure_classification:
+            failure_info = f" [{r.failure_classification.primary_category.value}]"
+        elif r.error:
+            failure_info = f" [error: {r.error[:60]}]"
+        console.print(f"  {status} {r.task_id}{failure_info}")
 
 
 @app.command()
 def experiment(
     config: str = typer.Option(..., help="Path to experiment YAML config"),
+    output: str = typer.Option("results/", help="Output directory"),
 ) -> None:
     """Run a multi-agent comparison experiment."""
-    console.print("[yellow]experiment command not yet implemented[/yellow]")
+    import asyncio
+    from pathlib import Path as P
+
+    from agentbench.adapters.base import AgentConfig
+    from agentbench.adapters.registry import get_adapter
+    from agentbench.core.experiment import ExperimentConfig
+    from agentbench.core.orchestrator import Orchestrator
+    from agentbench.core.task_loader import TaskLoader, TaskLoadError
+
+    config_path = P(config)
+    if not config_path.exists():
+        console.print(f"[red]Config file not found: {config_path}[/red]")
+        raise typer.Exit(code=1)
+
+    try:
+        exp = ExperimentConfig.load(config_path)
+    except Exception as e:
+        console.print(f"[red]Failed to load experiment config: {e}[/red]")
+        raise typer.Exit(code=1) from None
+
+    loader = TaskLoader()
+    suite_path = P(exp.suite)
+    if not suite_path.exists():
+        suite_path = P("tasks/suites") / f"{exp.suite}.yaml"
+    try:
+        tasks = loader.load_suite(suite_path)
+    except TaskLoadError as e:
+        console.print(f"[red]Failed to load suite '{exp.suite}':[/red]")
+        for err in e.errors:
+            console.print(f"  [red]• {err}[/red]")
+        raise typer.Exit(code=1) from None
+
+    console.print(f"[bold]Experiment: {exp.name}[/bold]")
+    console.print(f"  Suite: {exp.suite} ({len(tasks)} tasks)")
+    console.print(f"  Agents: {len(exp.agents)}, runs_per_task: {exp.runs_per_task}")
+
+    all_results: dict[str, list] = {}
+
+    for agent_cfg in exp.agents:
+        agent_results = []
+        agent_config = AgentConfig(
+            model=agent_cfg.model,
+            temperature=agent_cfg.temperature,
+            max_tokens_per_response=agent_cfg.max_tokens_per_response,
+            extra=agent_cfg.extra,
+        )
+        try:
+            adapter_instance = get_adapter(agent_cfg.adapter, agent_config)
+        except Exception as e:
+            console.print(f"[red]Failed to load adapter '{agent_cfg.adapter}': {e}[/red]")
+            continue
+
+        orchestrator = Orchestrator(output_dir=P(output) / exp.name)
+
+        for run_idx in range(exp.runs_per_task):
+            if exp.runs_per_task > 1:
+                console.print(
+                    f"\n[cyan]Agent: {agent_cfg.name} — run {run_idx + 1}/{exp.runs_per_task}[/cyan]"
+                )
+            else:
+                console.print(f"\n[cyan]Agent: {agent_cfg.name}[/cyan]")
+
+            run_results = asyncio.run(
+                orchestrator.run_suite(tasks, adapter_instance, exp.parallelism)
+            )
+            agent_results.extend(run_results)
+
+        all_results[agent_cfg.name] = agent_results
+
+    # Print aggregate summary
+    console.print("\n[bold]Experiment Summary[/bold]")
+    for agent_name, results in all_results.items():
+        passed = sum(1 for r in results if r.score and r.score.overall_pass)
+        total = len(results)
+        console.print(f"  {agent_name}: {passed}/{total} passed")
 
 
 @app.command()
@@ -53,11 +196,38 @@ def compare(
 @app.command()
 def trace(
     run_dir: str = typer.Argument(..., help="Path to a specific run directory"),
-    events: str | None = typer.Option(None, help="Filter by event type"),
+    events: str | None = typer.Option(None, help="Filter by event type (comma-separated)"),
     timeline: bool = typer.Option(False, help="Show chronological timeline"),
 ) -> None:
     """Inspect the trace of a specific run."""
-    console.print("[yellow]trace command not yet implemented[/yellow]")
+    from pathlib import Path as P
+
+    from agentbench.trace.collector import TraceCollector
+
+    trace_path = P(run_dir) / "trace.json"
+    if not trace_path.exists():
+        console.print(f"[red]No trace.json found in {run_dir}[/red]")
+        raise typer.Exit(code=1)
+
+    loaded_trace = TraceCollector.load(trace_path)
+
+    if timeline:
+        console.print(loaded_trace.to_timeline())
+    else:
+        summary = loaded_trace.summary()
+        console.print(f"[bold]Trace: {loaded_trace.run_id}[/bold]")
+        console.print(f"  Task: {loaded_trace.task_id}")
+        console.print(f"  Agent: {loaded_trace.agent_name}")
+        console.print(f"  Events: {summary.total_events}")
+        console.print(f"  Tokens: {summary.total_tokens}")
+        console.print(f"  Duration: {summary.wall_clock_seconds:.1f}s")
+
+        if events:
+            from agentbench.trace.events import EventType
+            filter_types = {EventType(e.strip()) for e in events.split(",")}
+            filtered = [ev for ev in loaded_trace.events if ev.event_type in filter_types]
+            for ev in filtered:
+                console.print(f"  [{ev.sequence_number}] {ev.event_type.value}: {ev.data}")
 
 
 @app.command()
