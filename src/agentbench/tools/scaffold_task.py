@@ -128,13 +128,13 @@ def scaffold_task(
         Difficulty(difficulty)
     except ValueError:
         valid = [d.value for d in Difficulty]
-        raise ValueError(f"Invalid difficulty {difficulty!r}. Must be one of: {valid}")
+        raise ValueError(f"Invalid difficulty {difficulty!r}. Must be one of: {valid}") from None
 
     try:
         TaskType(task_type)
     except ValueError:
         valid = [t.value for t in TaskType]
-        raise ValueError(f"Invalid task_type {task_type!r}. Must be one of: {valid}")
+        raise ValueError(f"Invalid task_type {task_type!r}. Must be one of: {valid}") from None
 
     if tasks_root is None:
         tasks_root = Path.cwd() / "tasks"
@@ -153,7 +153,9 @@ def scaffold_task(
 
     # Write task.yaml
     (task_dir / "task.yaml").write_text(
-        _TASK_YAML_TEMPLATE.format(id=id, difficulty=difficulty, task_type=task_type, language=language)
+        _TASK_YAML_TEMPLATE.format(
+            id=id, difficulty=difficulty, task_type=task_type, language=language
+        )
     )
 
     # Write language-specific placeholder files
@@ -175,8 +177,12 @@ def scaffold_task(
 
     console.print(f"\n[green]✓ Task scaffold created:[/green] {task_dir}\n")
     console.print("[bold]Next steps:[/bold]")
-    console.print(f"  1. Edit [cyan]{task_dir / 'task.yaml'}[/cyan] — fill in the prompt and eval command")
-    console.print(f"  2. Edit [cyan]{task_dir / 'repo'}[/cyan] — add the broken code that needs fixing")
+    console.print(
+        f"  1. Edit [cyan]{task_dir / 'task.yaml'}[/cyan] — fill in the prompt and eval command"
+    )
+    console.print(
+        f"  2. Edit [cyan]{task_dir / 'repo'}[/cyan] — add the broken code that needs fixing"
+    )
     console.print(f"  3. Add the solution files to [cyan]{task_dir / 'solution'}[/cyan]")
     console.print(f"  4. Run [cyan]agentbench deep-validate {task_dir}[/cyan] to verify the task\n")
 

@@ -1,8 +1,10 @@
 """Tests that verify all seed tasks are valid and well-formed."""
 from __future__ import annotations
 
-import pytest
 from pathlib import Path
+
+import pytest
+
 from agentbench.core.task_loader import TaskLoader
 
 TASKS_DIR = Path(__file__).parent.parent / "tasks"
@@ -20,7 +22,9 @@ def test_task_yaml_is_valid(task_dir: Path):
     task_yaml = task_dir / "task.yaml"
     assert task_yaml.exists(), f"Missing task.yaml in {task_dir}"
     task = loader.load_task(task_yaml)
-    assert task.id == task_dir.name, f"Task ID '{task.id}' must match directory name '{task_dir.name}'"
+    assert task.id == task_dir.name, (
+        f"Task ID '{task.id}' must match directory name '{task_dir.name}'"
+    )
 
 
 @pytest.mark.parametrize("task_dir", get_task_dirs(), ids=lambda d: d.name)

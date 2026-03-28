@@ -1,20 +1,19 @@
 """Tests for SandboxManager — requires Docker daemon to be running."""
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
 from agentbench.core.models import TaskSpec
 from agentbench.sandbox.manager import (
-    ExecResult,
-    FileDiff,
     ResourceLimits,
-    Sandbox,
-    SandboxError,
     SandboxManager,
     SandboxStatus,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 # Mark all tests in this module as requiring Docker
 pytestmark = pytest.mark.docker

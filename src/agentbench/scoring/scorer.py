@@ -7,16 +7,23 @@ across four dimensions: correctness, quality, efficiency, process.
 from __future__ import annotations
 
 import re
+from typing import TYPE_CHECKING
 
-from agentbench.core.models import TaskSpec, EvalType
-from agentbench.sandbox.manager import Sandbox, SandboxManager, FileDiff
-from agentbench.trace.collector import TraceCollector
-from agentbench.trace.events import EventType
-from agentbench.trace.summary import TraceSummary
+from agentbench.core.models import EvalType, TaskSpec
 from agentbench.scoring.models import (
-    TaskScore, CorrectnessResult, SecondaryResult,
-    QualityResult, EfficiencyResult, ProcessResult,
+    CorrectnessResult,
+    EfficiencyResult,
+    ProcessResult,
+    QualityResult,
+    SecondaryResult,
+    TaskScore,
 )
+from agentbench.trace.events import EventType
+
+if TYPE_CHECKING:
+    from agentbench.sandbox.manager import FileDiff, Sandbox, SandboxManager
+    from agentbench.trace.collector import TraceCollector
+    from agentbench.trace.summary import TraceSummary
 
 _TEST_KEYWORDS = ("pytest", "jest", "unittest", "npm test", "go test")
 

@@ -11,6 +11,7 @@ Responsibilities:
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import os
 import shlex
 import shutil
@@ -20,17 +21,20 @@ import time
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
-from typing import AsyncIterator
+from typing import TYPE_CHECKING
 
 import docker
 import docker.errors
 
-from agentbench.core.models import TaskSpec
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
+    from agentbench.core.models import TaskSpec
 
 
-class SandboxStatus(str, Enum):
+class SandboxStatus(StrEnum):
     CREATING = "creating"
     READY = "ready"
     RUNNING = "running"
@@ -269,12 +273,12 @@ class SandboxManager:
                 files_deleted.append(path)
 
         total_added = sum(
-            1 for l in raw_diff.splitlines()
-            if l.startswith("+") and not l.startswith("+++")
+            1 for line in raw_diff.splitlines()
+            if line.startswith("+") and not line.startswith("+++")
         )
         total_deleted = sum(
-            1 for l in raw_diff.splitlines()
-            if l.startswith("-") and not l.startswith("---")
+            1 for line in raw_diff.splitlines()
+            if line.startswith("-") and not line.startswith("---")
         )
 
         return FileDiff(
@@ -306,10 +310,8 @@ class SandboxManager:
     async def teardown_all(self) -> None:
         """Tear down all active sandboxes. Used for cleanup on shutdown."""
         for sandbox in list(self._active_sandboxes.values()):
-            try:
+            with contextlib.suppress(Exception):
                 await self.teardown(sandbox)
-            except Exception:
-                pass  # best-effort cleanup
 
     @asynccontextmanager
     async def session(

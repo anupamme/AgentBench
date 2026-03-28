@@ -12,6 +12,16 @@ requires-python = ">=3.12"
 authors = [
     { name = "Anupam Mediratta", email = "mediratta@gmail.com" },
 ]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 
 dependencies = [
     "typer>=0.12,<1.0",
@@ -35,6 +45,13 @@ dev = [
     "pre-commit>=3.7,<4.0",
 ]
 
+[project.urls]
+Homepage = "https://github.com/anupamme/AgentBench"
+Repository = "https://github.com/anupamme/AgentBench"
+Documentation = "https://github.com/anupamme/AgentBench#readme"
+Issues = "https://github.com/anupamme/AgentBench/issues"
+
+
 [project.scripts]
 agentbench = "agentbench.cli.main:app"
 
@@ -48,6 +65,13 @@ src = ["src"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "TCH"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.ruff.lint.per-file-ignores]
+"src/agentbench/reporting/reporter.py" = ["E501"]  # Jinja2 template rows can't be wrapped
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

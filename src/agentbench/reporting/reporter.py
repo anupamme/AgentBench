@@ -3,11 +3,14 @@ Report Generator — produces formatted reports from evaluation results.
 """
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+from jinja2 import Template
 from rich.console import Console
 from rich.table import Table
-from jinja2 import Template
 
-from agentbench.reporting.data import ExperimentData
+if TYPE_CHECKING:
+    from agentbench.reporting.data import ExperimentData
 
 _MARKDOWN_TEMPLATE = """\
 # Evaluation Report

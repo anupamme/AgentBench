@@ -1,15 +1,19 @@
 """Tests for the failure classifier."""
 from __future__ import annotations
 
-import pytest
 from agentbench.classification.classifier import FailureClassifier
 from agentbench.classification.taxonomy import FailureCategory
+from agentbench.core.models import TaskSpec
 from agentbench.scoring.models import (
-    TaskScore, CorrectnessResult, QualityResult, EfficiencyResult, ProcessResult, SecondaryResult,
+    CorrectnessResult,
+    EfficiencyResult,
+    ProcessResult,
+    QualityResult,
+    SecondaryResult,
+    TaskScore,
 )
 from agentbench.trace.collector import TraceCollector
 from agentbench.trace.events import EventType
-from agentbench.core.models import TaskSpec
 
 
 def _make_task(**overrides) -> TaskSpec:
@@ -20,7 +24,11 @@ def _make_task(**overrides) -> TaskSpec:
         "setup": {"repo": "/tmp", "commit": "HEAD",
                   "files_to_highlight": overrides.pop("files_to_highlight", ["main.py"])},
         "prompt": "Fix the bug in the code.",
-        "evaluation": {"primary": {"type": "test_suite", "command": "pytest", "pass_condition": "exit_code == 0"}},
+        "evaluation": {
+            "primary": {
+                "type": "test_suite", "command": "pytest", "pass_condition": "exit_code == 0",
+            }
+        },
     }
     raw.update(overrides)
     return TaskSpec.model_validate(raw)
@@ -66,7 +74,8 @@ class TestFailureClassifier:
         trace.record(EventType.AGENT_DONE, {"reason": "completed"})
         result = classifier.classify(score, trace, _make_task())
         assert result is not None
-        assert FailureCategory.NO_VERIFICATION in [result.primary_category] + result.secondary_categories
+        all_cats = [result.primary_category] + result.secondary_categories
+        assert FailureCategory.NO_VERIFICATION in all_cats
 
     def test_context_miss_detected(self):
         classifier = FailureClassifier()
@@ -82,7 +91,8 @@ class TestFailureClassifier:
         task = _make_task(files_to_highlight=["main.py", "utils.py"])
         result = classifier.classify(score, trace, task)
         assert result is not None
-        assert FailureCategory.CONTEXT_MISS in [result.primary_category] + result.secondary_categories
+        all_cats = [result.primary_category] + result.secondary_categories
+        assert FailureCategory.CONTEXT_MISS in all_cats
 
     def test_incomplete_fix_detected(self):
         classifier = FailureClassifier()
@@ -97,7 +107,8 @@ class TestFailureClassifier:
 
         result = classifier.classify(score, trace, _make_task())
         assert result is not None
-        assert FailureCategory.INCOMPLETE_FIX in [result.primary_category] + result.secondary_categories
+        all_cats = [result.primary_category] + result.secondary_categories
+        assert FailureCategory.INCOMPLETE_FIX in all_cats
 
     def test_ignored_test_failure_detected(self):
         classifier = FailureClassifier()
@@ -113,7 +124,8 @@ class TestFailureClassifier:
 
         result = classifier.classify(score, trace, _make_task())
         assert result is not None
-        assert FailureCategory.IGNORED_TEST_FAILURE in [result.primary_category] + result.secondary_categories
+        all_cats = [result.primary_category] + result.secondary_categories
+        assert FailureCategory.IGNORED_TEST_FAILURE in all_cats
 
     def test_unknown_fallback(self):
         classifier = FailureClassifier()
@@ -136,7 +148,9 @@ class TestFailureClassifier:
     def test_regression_detected(self):
         classifier = FailureClassifier()
         # partial_score=1.0 means all targeted tests pass, but a secondary suite failed
-        secondary = [SecondaryResult(label="full_suite", passed=False, output="3 broken", exit_code=1)]
+        secondary = [
+            SecondaryResult(label="full_suite", passed=False, output="3 broken", exit_code=1)
+        ]
         score = _make_score(primary_pass=False, partial=1.0, secondary=secondary)
         trace = TraceCollector("r", "t", "a")
         trace.record(EventType.AGENT_START, {"prompt": "fix", "model": "t", "config": {}})

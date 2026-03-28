@@ -121,7 +121,10 @@ def test_failure_report_renders() -> None:
 def test_markdown_report_contains_sections() -> None:
     data = _make_experiment(
         _make_run("task-a", "agent-1", "r1", passed=True, total_tokens=800),
-        _make_run("task-b", "agent-1", "r2", passed=False, failure_category="context_miss", total_tokens=1200),
+        _make_run(
+            "task-b", "agent-1", "r2", passed=False,
+            failure_category="context_miss", total_tokens=1200,
+        ),
     )
     reporter = Reporter(_silent_console())
     md = reporter.markdown_report(data)
