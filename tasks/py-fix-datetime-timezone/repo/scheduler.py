@@ -1,4 +1,4 @@
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime
 
 
 def is_overdue(deadline: datetime) -> bool:
@@ -8,6 +8,6 @@ def is_overdue(deadline: datetime) -> bool:
 
 def hours_until(deadline: datetime) -> float:
     """Return hours remaining until deadline (negative if overdue)."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     delta = deadline - now
     return delta.total_seconds() / 3600

@@ -1,4 +1,5 @@
 """Tests for TerminalReporter using Rich console output capture."""
+
 from __future__ import annotations
 
 from io import StringIO
@@ -50,6 +51,7 @@ def mock_failing_score() -> dict[str, Any]:
 
 # --- print_run_result ---
 
+
 def test_print_run_result_pass(mock_passing_score: dict[str, Any]) -> None:
     reporter, buf = _silent_reporter()
     reporter.print_run_result(mock_passing_score)
@@ -67,6 +69,7 @@ def test_print_run_result_fail(mock_failing_score: dict[str, Any]) -> None:
 
 
 # --- print_suite_summary ---
+
 
 def _make_run(
     task_id: str,
@@ -121,6 +124,7 @@ def test_print_suite_summary_footer() -> None:
 
 # --- print_failure_distribution ---
 
+
 def test_print_failure_distribution_bars() -> None:
     failure_counts = {"context_miss": 15, "no_verification": 8}
     reporter, buf = _silent_reporter()
@@ -133,15 +137,26 @@ def test_print_failure_distribution_bars() -> None:
 
 # --- print_agent_comparison ---
 
+
 def test_print_agent_comparison_columns() -> None:
     experiment_summary: dict[str, Any] = {
         "by_agent": {
             "claude-api": [
                 {"task_id": "task-a", "primary_pass": True, "total_tokens": 5000},
-                {"task_id": "task-b", "primary_pass": False, "failure_class": "timeout_or_loop", "total_tokens": 90000},
+                {
+                    "task_id": "task-b",
+                    "primary_pass": False,
+                    "failure_class": "timeout_or_loop",
+                    "total_tokens": 90000,
+                },
             ],
             "aider": [
-                {"task_id": "task-a", "primary_pass": False, "failure_class": "context_miss", "total_tokens": 8000},
+                {
+                    "task_id": "task-a",
+                    "primary_pass": False,
+                    "failure_class": "context_miss",
+                    "total_tokens": 8000,
+                },
                 {"task_id": "task-b", "primary_pass": True, "total_tokens": 45000},
             ],
         }
@@ -155,11 +170,30 @@ def test_print_agent_comparison_columns() -> None:
 
 # --- print_task_list ---
 
+
 def test_print_task_list_rows() -> None:
     tasks: list[dict[str, Any]] = [
-        {"id": "bug-fix-calc", "difficulty": "easy", "task_type": "bug_fix", "languages": ["python"], "tags": ["math"]},
-        {"id": "refactor-auth", "difficulty": "medium", "task_type": "refactor", "languages": ["python", "js"], "tags": []},
-        {"id": "perf-query", "difficulty": "hard", "task_type": "performance", "languages": ["sql"], "tags": ["db"]},
+        {
+            "id": "bug-fix-calc",
+            "difficulty": "easy",
+            "task_type": "bug_fix",
+            "languages": ["python"],
+            "tags": ["math"],
+        },
+        {
+            "id": "refactor-auth",
+            "difficulty": "medium",
+            "task_type": "refactor",
+            "languages": ["python", "js"],
+            "tags": [],
+        },
+        {
+            "id": "perf-query",
+            "difficulty": "hard",
+            "task_type": "performance",
+            "languages": ["sql"],
+            "tags": ["db"],
+        },
     ]
     reporter, buf = _silent_reporter()
     reporter.print_task_list(tasks)
@@ -174,13 +208,16 @@ def test_print_task_list_rows() -> None:
 
 # --- print_experiment_comparison ---
 
+
 def test_print_experiment_comparison_arrows() -> None:
     comparison: dict[str, Any] = {
         "agent_deltas": {
             "claude-api": {"a_rate": 0.72, "b_rate": 0.78, "delta": 0.06, "p_value": 0.03},
         },
         "flipped_pass_to_fail": [],
-        "flipped_fail_to_pass": [{"task_id": "task-c", "agent": "claude-api", "prev_failure_class": "context_miss"}],
+        "flipped_fail_to_pass": [
+            {"task_id": "task-c", "agent": "claude-api", "prev_failure_class": "context_miss"}
+        ],
         "failure_shifts": {},
     }
     reporter, buf = _silent_reporter()

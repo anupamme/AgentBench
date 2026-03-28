@@ -1,5 +1,5 @@
 import weakref
-from typing import Callable
+from collections.abc import Callable
 
 
 class EventBus:
@@ -7,7 +7,7 @@ class EventBus:
         self._subscribers: dict[str, list] = {}
 
     def subscribe(self, event: str, handler: Callable) -> None:
-        if hasattr(handler, '__self__'):
+        if hasattr(handler, "__self__"):
             ref = weakref.WeakMethod(handler)
         else:
             ref = weakref.ref(handler)

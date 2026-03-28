@@ -4,6 +4,7 @@ End-to-end integration test: task → sandbox → agent → trace → results.
 Requires Docker to be running. Uses the calc-fix-division-by-zero seed task
 and a mock adapter that applies the known-good fix.
 """
+
 from __future__ import annotations
 
 import json
@@ -118,9 +119,9 @@ class TestEndToEndPipeline:
                 calc_task.evaluation.primary.command,
                 timeout=60,
             )
-            assert eval_result.exit_code == 0, (
-                f"Tests failed:\n{eval_result.stdout}\n{eval_result.stderr}"
-            )
+            assert (
+                eval_result.exit_code == 0
+            ), f"Tests failed:\n{eval_result.stdout}\n{eval_result.stderr}"
 
         # Verify trace serialization round-trips
         summary = trace.summary()
@@ -132,9 +133,7 @@ class TestEndToEndPipeline:
         assert parsed["run_id"] == "e2e-test-001"
         assert len(parsed["events"]) == trace.event_count
 
-    async def test_full_pipeline_with_wrong_fix(
-        self, calc_task, sandbox_manager, wrong_fix_script
-    ):
+    async def test_full_pipeline_with_wrong_fix(self, calc_task, sandbox_manager, wrong_fix_script):
         """Wrong fix should result in failing tests."""
         trace = TraceCollector(run_id="e2e-test-002", task_id=calc_task.id, agent_name="mock")
         adapter = MockAdapter(wrong_fix_script)
@@ -145,7 +144,9 @@ class TestEndToEndPipeline:
 
             # Run eval — should fail
             eval_result = await sandbox_manager.exec(
-                sandbox, calc_task.evaluation.primary.command, timeout=60,
+                sandbox,
+                calc_task.evaluation.primary.command,
+                timeout=60,
             )
             assert eval_result.exit_code != 0
 
@@ -170,9 +171,7 @@ class TestEndToEndPipeline:
         assert loaded.event_count == trace.event_count
         assert loaded.events[0].event_type == trace.events[0].event_type
 
-    async def test_filesystem_diff_after_fix(
-        self, calc_task, sandbox_manager, correct_fix_script
-    ):
+    async def test_filesystem_diff_after_fix(self, calc_task, sandbox_manager, correct_fix_script):
         """After applying a fix, snapshot_diff should show calc.py as modified."""
         trace = TraceCollector(run_id="e2e-test-004", task_id=calc_task.id, agent_name="mock")
         adapter = MockAdapter(correct_fix_script)

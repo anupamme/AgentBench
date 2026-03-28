@@ -3,6 +3,7 @@ Task Loader — loads and validates task definitions from YAML files.
 
 Supports loading individual tasks, directories of tasks, and named suites.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -62,8 +63,7 @@ class TaskLoader:
             return TaskSpec.model_validate(raw)
         except ValidationError as e:
             errors = [
-                f"{' -> '.join(str(loc) for loc in err['loc'])}: {err['msg']}"
-                for err in e.errors()
+                f"{' -> '.join(str(loc) for loc in err['loc'])}: {err['msg']}" for err in e.errors()
             ]
             raise TaskLoadError(path, errors) from e
 
@@ -107,8 +107,7 @@ class TaskLoader:
             suite = _SuiteSpec.model_validate(raw)
         except ValidationError as e:
             errors = [
-                f"{' -> '.join(str(loc) for loc in err['loc'])}: {err['msg']}"
-                for err in e.errors()
+                f"{' -> '.join(str(loc) for loc in err['loc'])}: {err['msg']}" for err in e.errors()
             ]
             raise TaskLoadError(suite_path, errors) from e
 

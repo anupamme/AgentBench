@@ -1,4 +1,5 @@
 """Tests for the multi-dimensional scoring pipeline."""
+
 from __future__ import annotations
 
 import pytest
@@ -62,14 +63,24 @@ class TestProcessScoring:
 
         scorer = Scorer()
         task_raw = {
-            "id": "test-task", "version": 1,
-            "metadata": {"difficulty": "easy", "task_type": "bug_fix", "languages": ["python"],
-                         "estimated_human_time_minutes": 5, "source": "test"},
+            "id": "test-task",
+            "version": 1,
+            "metadata": {
+                "difficulty": "easy",
+                "task_type": "bug_fix",
+                "languages": ["python"],
+                "estimated_human_time_minutes": 5,
+                "source": "test",
+            },
             "setup": {"repo": "/tmp", "commit": "HEAD", "files_to_highlight": ["main.py"]},
             "prompt": "Fix the bug in main.py.",
-            "evaluation": {"primary": {
-                "type": "test_suite", "command": "pytest", "pass_condition": "exit_code == 0",
-            }},
+            "evaluation": {
+                "primary": {
+                    "type": "test_suite",
+                    "command": "pytest",
+                    "pass_condition": "exit_code == 0",
+                }
+            },
         }
         task = TaskSpec.model_validate(task_raw)
         result = scorer._score_process(trace, task)
@@ -88,14 +99,24 @@ class TestProcessScoring:
 
         scorer = Scorer()
         task_raw = {
-            "id": "test-task", "version": 1,
-            "metadata": {"difficulty": "easy", "task_type": "bug_fix", "languages": ["python"],
-                         "estimated_human_time_minutes": 5, "source": "test"},
+            "id": "test-task",
+            "version": 1,
+            "metadata": {
+                "difficulty": "easy",
+                "task_type": "bug_fix",
+                "languages": ["python"],
+                "estimated_human_time_minutes": 5,
+                "source": "test",
+            },
             "setup": {"repo": "/tmp", "commit": "HEAD"},
             "prompt": "Fix the bug in main.py.",
-            "evaluation": {"primary": {
-                "type": "test_suite", "command": "pytest", "pass_condition": "exit_code == 0",
-            }},
+            "evaluation": {
+                "primary": {
+                    "type": "test_suite",
+                    "command": "pytest",
+                    "pass_condition": "exit_code == 0",
+                }
+            },
         }
         task = TaskSpec.model_validate(task_raw)
         result = scorer._score_process(trace, task)
@@ -105,7 +126,9 @@ class TestProcessScoring:
 class TestTaskScore:
     def test_to_dict(self):
         score = TaskScore(
-            task_id="test", agent_name="mock", run_id="run-1",
+            task_id="test",
+            agent_name="mock",
+            run_id="run-1",
             correctness=CorrectnessResult(primary_pass=True, partial_score=1.0),
             quality=QualityResult(lint_clean=True),
             efficiency=EfficiencyResult(total_tokens=500, total_turns=3),

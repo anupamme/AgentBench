@@ -3,6 +3,7 @@ Configuration — loads and manages global configuration.
 
 Supports loading from environment variables and YAML config files.
 """
+
 from __future__ import annotations
 
 

@@ -11,6 +11,7 @@ Checks:
 7. Tests PASS with the solution applied (proving the fix works)
 8. Evaluation commands complete within timeout
 """
+
 from __future__ import annotations
 
 import base64
@@ -109,6 +110,7 @@ class TaskValidator:
                 )
 
                 # Check 5: Tests fail initially ─────────────────────────────
+                assert task.evaluation.primary.command is not None
                 t0 = time.monotonic()
                 eval_result = await self._sandbox_manager.exec(
                     sandbox,
@@ -117,17 +119,24 @@ class TaskValidator:
                 )
                 duration = time.monotonic() - t0
                 if eval_result.exit_code != 0:
-                    results.append(CheckResult(
-                        "tests_fail_initially", True,
-                        f"Exit code: {eval_result.exit_code}",
-                        duration,
-                    ))
+                    results.append(
+                        CheckResult(
+                            "tests_fail_initially",
+                            True,
+                            f"Exit code: {eval_result.exit_code}",
+                            duration,
+                        )
+                    )
                 else:
-                    results.append(CheckResult(
-                        "tests_fail_initially", False,
-                        "Tests pass on unmodified repo — bug doesn't exist or tests don't catch it",
-                        duration,
-                    ))
+                    results.append(
+                        CheckResult(
+                            "tests_fail_initially",
+                            False,
+                            "Tests pass on unmodified repo — bug doesn't exist or tests"
+                            " don't catch it",
+                            duration,
+                        )
+                    )
 
                 # Check 6: Tests pass with solution ──────────────────────────
                 # Copy solution files into the workspace via base64-encoded writes
@@ -137,15 +146,16 @@ class TaskValidator:
                         content = sol_file.read_bytes()
                         encoded = base64.b64encode(content).decode()
                         cmd = (
-                            "python3 -c \""
+                            'python3 -c "'
                             "import base64, pathlib; "
                             f"p = pathlib.Path('{rel_path}'); "
                             "p.parent.mkdir(parents=True, exist_ok=True); "
                             f"p.write_bytes(base64.b64decode('{encoded}'))"
-                            "\""
+                            '"'
                         )
                         await self._sandbox_manager.exec(sandbox, cmd, timeout=30)
 
+                assert task.evaluation.primary.command is not None
                 t0 = time.monotonic()
                 eval_result = await self._sandbox_manager.exec(
                     sandbox,
@@ -159,11 +169,14 @@ class TaskValidator:
                     )
                 else:
                     output_preview = (eval_result.stdout + eval_result.stderr)[:500]
-                    results.append(CheckResult(
-                        "tests_pass_with_solution", False,
-                        f"Tests fail even with solution applied:\n{output_preview}",
-                        duration,
-                    ))
+                    results.append(
+                        CheckResult(
+                            "tests_pass_with_solution",
+                            False,
+                            f"Tests fail even with solution applied:\n{output_preview}",
+                            duration,
+                        )
+                    )
 
         except Exception as e:
             results.append(CheckResult("sandbox_error", False, str(e)))

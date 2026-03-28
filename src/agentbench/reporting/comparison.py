@@ -6,6 +6,7 @@ Provides:
 - AgentDelta, TaskFlip, ComparisonResult, ExperimentComparator: multi-agent
   experiment comparison with McNemar's test and bootstrap CIs (new)
 """
+
 from __future__ import annotations
 
 import math
@@ -21,6 +22,7 @@ if TYPE_CHECKING:
 # Legacy pairwise comparison (preserved; renamed to SimpleComparisonResult)
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class SimpleComparisonResult:
     baseline_agent: str
@@ -28,11 +30,11 @@ class SimpleComparisonResult:
     baseline_pass_rate: float
     candidate_pass_rate: float
     pass_rate_delta: float
-    p_value: float                      # from McNemar's test
-    is_significant: bool                # p_value < 0.05
-    unique_baseline_solves: list[str]   # tasks only baseline solved
+    p_value: float  # from McNemar's test
+    is_significant: bool  # p_value < 0.05
+    unique_baseline_solves: list[str]  # tasks only baseline solved
     unique_candidate_solves: list[str]  # tasks only candidate solved
-    token_efficiency_ratio: float       # candidate_avg_tokens / baseline_avg_tokens
+    token_efficiency_ratio: float  # candidate_avg_tokens / baseline_avg_tokens
 
 
 def _mcnemar_p_value(b: int, c: int) -> float:
@@ -41,7 +43,8 @@ def _mcnemar_p_value(b: int, c: int) -> float:
         return 1.0
     chi2 = (abs(b - c) - 1) ** 2 / (b + c)
     try:
-        from scipy.stats import chi2 as chi2_dist  # type: ignore[import-untyped]
+        from scipy.stats import chi2 as chi2_dist  # type: ignore[import-untyped,unused-ignore]
+
         return float(chi2_dist.sf(chi2, 1))
     except ImportError:
         # Simple approximation: p ≈ exp(-chi2/2) for 1 degree of freedom
@@ -176,66 +179,80 @@ class ComparisonEngine:
         # Efficiency
         ratio = result.token_efficiency_ratio
         ratio_style = "green" if ratio < 1.0 else ("red" if ratio > 1.0 else "")
-        ratio_str = f"[{ratio_style}]{ratio:.2f}x[/{ratio_style}]" if ratio_style else f"{ratio:.2f}x"  # noqa: E501
+        ratio_str = (
+            f"[{ratio_style}]{ratio:.2f}x[/{ratio_style}]" if ratio_style else f"{ratio:.2f}x"
+        )  # noqa: E501
         con.print(f"\n  Token efficiency ratio (candidate/baseline): {ratio_str}")
 
         # Recommendation
         con.print()
         if result.is_significant and result.pass_rate_delta > 0:
-            con.print(Panel(
-                f"[green]Recommendation: {result.candidate_agent} is significantly better.[/green]"
-            ))
+            con.print(
+                Panel(
+                    f"[green]Recommendation: {result.candidate_agent} is significantly"
+                    " better.[/green]"
+                )
+            )
         elif result.is_significant and result.pass_rate_delta < 0:
-            con.print(Panel(
-                f"[red]Recommendation: {result.baseline_agent} is significantly better.[/red]"
-            ))
+            con.print(
+                Panel(
+                    f"[red]Recommendation: {result.baseline_agent} is significantly better.[/red]"
+                )
+            )
         else:
-            con.print(Panel(
-                "[yellow]Recommendation: No statistically significant difference detected.[/yellow]"
-            ))
+            con.print(
+                Panel(
+                    "[yellow]Recommendation: No statistically significant difference"
+                    " detected.[/yellow]"
+                )
+            )
 
 
 # ---------------------------------------------------------------------------
 # New multi-agent experiment comparator
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class AgentDelta:
     """Pass rate delta for one agent across two experiments."""
+
     agent_name: str
     a_pass_rate: float
     b_pass_rate: float
-    delta: float           # b_pass_rate - a_pass_rate (positive = improvement)
-    a_pass_b_fail: int     # Regressions
-    a_fail_b_pass: int     # Improvements
+    delta: float  # b_pass_rate - a_pass_rate (positive = improvement)
+    a_pass_b_fail: int  # Regressions
+    a_fail_b_pass: int  # Improvements
     p_value: float
-    significant: bool      # p_value < 0.05
+    significant: bool  # p_value < 0.05
 
 
 @dataclass
 class TaskFlip:
     """A task that changed outcome between experiments."""
+
     task_id: str
     agent_name: str
-    direction: str         # "pass_to_fail" or "fail_to_pass"
-    failure_class: str     # failure_class in the failing experiment
+    direction: str  # "pass_to_fail" or "fail_to_pass"
+    failure_class: str  # failure_class in the failing experiment
 
 
 @dataclass
 class ComparisonResult:
     """Complete result of comparing two experiments."""
+
     exp_a_id: str
     exp_b_id: str
     exp_a_name: str
     exp_b_name: str
 
     agent_deltas: list[AgentDelta]
-    flipped_pass_to_fail: list[TaskFlip]    # Regressions
-    flipped_fail_to_pass: list[TaskFlip]    # Improvements
+    flipped_pass_to_fail: list[TaskFlip]  # Regressions
+    flipped_fail_to_pass: list[TaskFlip]  # Improvements
     failure_shifts: dict[str, dict[str, Any]]
     # {"context_miss": {"a_count": 15, "b_count": 10, "delta": -5}, ...}
-    unique_a: list[str]    # Task IDs only solved in exp_a
-    unique_b: list[str]    # Task IDs only solved in exp_b
+    unique_a: list[str]  # Task IDs only solved in exp_a
+    unique_b: list[str]  # Task IDs only solved in exp_b
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize to JSON-compatible dict."""
@@ -318,9 +335,7 @@ class ExperimentComparator:
             return "unknown"
 
         # Collect all agents
-        all_agents = sorted(
-            {key[1] for key in a_groups} | {key[1] for key in b_groups}
-        )
+        all_agents = sorted({key[1] for key in a_groups} | {key[1] for key in b_groups})
 
         agent_deltas: list[AgentDelta] = []
         flipped_pass_to_fail: list[TaskFlip] = []
@@ -348,24 +363,22 @@ class ExperimentComparator:
             delta = b_pass_rate - a_pass_rate
 
             # Paired disagreements on common tasks
-            a_pass_b_fail = sum(
-                1 for t in common if a_pass_map[t] and not b_pass_map[t]
-            )
-            a_fail_b_pass = sum(
-                1 for t in common if not a_pass_map[t] and b_pass_map[t]
-            )
+            a_pass_b_fail = sum(1 for t in common if a_pass_map[t] and not b_pass_map[t])
+            a_fail_b_pass = sum(1 for t in common if not a_pass_map[t] and b_pass_map[t])
             p_value = ExperimentComparator.mcnemar_test(a_pass_b_fail, a_fail_b_pass)
 
-            agent_deltas.append(AgentDelta(
-                agent_name=agent,
-                a_pass_rate=a_pass_rate,
-                b_pass_rate=b_pass_rate,
-                delta=delta,
-                a_pass_b_fail=a_pass_b_fail,
-                a_fail_b_pass=a_fail_b_pass,
-                p_value=p_value,
-                significant=p_value < 0.05,
-            ))
+            agent_deltas.append(
+                AgentDelta(
+                    agent_name=agent,
+                    a_pass_rate=a_pass_rate,
+                    b_pass_rate=b_pass_rate,
+                    delta=delta,
+                    a_pass_b_fail=a_pass_b_fail,
+                    a_fail_b_pass=a_fail_b_pass,
+                    p_value=p_value,
+                    significant=p_value < 0.05,
+                )
+            )
 
             # Task flips
             for task in common:
@@ -373,29 +386,32 @@ class ExperimentComparator:
                 b_passed = b_pass_map[task]
                 if a_passed and not b_passed:
                     fc = failure_class_for(b_groups[(task, agent)])
-                    flipped_pass_to_fail.append(TaskFlip(
-                        task_id=task,
-                        agent_name=agent,
-                        direction="pass_to_fail",
-                        failure_class=fc,
-                    ))
+                    flipped_pass_to_fail.append(
+                        TaskFlip(
+                            task_id=task,
+                            agent_name=agent,
+                            direction="pass_to_fail",
+                            failure_class=fc,
+                        )
+                    )
                 elif not a_passed and b_passed:
                     fc = failure_class_for(a_groups[(task, agent)])
-                    flipped_fail_to_pass.append(TaskFlip(
-                        task_id=task,
-                        agent_name=agent,
-                        direction="fail_to_pass",
-                        failure_class=fc,
-                    ))
+                    flipped_fail_to_pass.append(
+                        TaskFlip(
+                            task_id=task,
+                            agent_name=agent,
+                            direction="fail_to_pass",
+                            failure_class=fc,
+                        )
+                    )
 
         # Failure class distribution shifts
         def count_failures(runs: list[Any]) -> dict[str, int]:
             counts: dict[str, int] = {}
             for run in runs:
                 if not run.passed:
-                    fc = (
-                        getattr(run, "failure_category", None)
-                        or getattr(run, "failure_class", None)
+                    fc = getattr(run, "failure_category", None) or getattr(
+                        run, "failure_class", None
                     )
                     if fc:
                         counts[str(fc)] = counts.get(str(fc), 0) + 1
@@ -448,7 +464,7 @@ class ExperimentComparator:
 
         if n < 25:
             # Exact binomial: X ~ Binomial(n, 0.5), two-sided
-            half = 0.5 ** n
+            half = 0.5**n
             # P(X <= b)
             p_le = sum(math.comb(n, k) * half for k in range(b + 1))
             # P(X >= b)

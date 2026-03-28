@@ -1,19 +1,21 @@
 import threading
-from typing import Callable, List
+from collections.abc import Callable
 
 
 def fetch(url: str, callback: Callable):
     """Fetch a URL in a background thread and call callback(result)."""
+
     def _run():
         # Simulate network fetch
         result = f"content-of-{url}"
         callback(result)
+
     t = threading.Thread(target=_run)
     t.start()
     t.join()
 
 
-def fetch_all(urls: List[str], callback: Callable):
+def fetch_all(urls: list[str], callback: Callable):
     """Fetch all URLs and call callback with list of results."""
     results = []
     lock = threading.Lock()

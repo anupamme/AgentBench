@@ -1,4 +1,5 @@
 """Shared test fixtures for AgentBench."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -8,6 +9,7 @@ import pytest
 
 def pytest_configure(config: pytest.Config) -> None:
     config.addinivalue_line("markers", "docker: tests requiring Docker daemon")
+
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
@@ -19,7 +21,7 @@ def fixtures_dir() -> Path:
 
 @pytest.fixture
 def sample_task_yaml() -> str:
-    return '''
+    return """
 id: "test-task-001"
 version: 1
 metadata:
@@ -46,4 +48,4 @@ constraints:
   max_tokens: 50000
   timeout_seconds: 120
   network: false
-'''
+"""

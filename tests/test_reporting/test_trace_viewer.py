@@ -1,4 +1,5 @@
 """Tests for TraceViewer."""
+
 from __future__ import annotations
 
 from io import StringIO
@@ -16,14 +17,24 @@ def sample_trace() -> TraceCollector:
     """A trace with 3 turns and mixed event types."""
     tc = TraceCollector(run_id="test-run", task_id="test-task", agent_name="test-agent")
     # Turn 0
-    tc.record(EventType.AGENT_START, {"agent_name": "test-agent", "agent_version": "1.0", "config": {}})
+    tc.record(
+        EventType.AGENT_START, {"agent_name": "test-agent", "agent_version": "1.0", "config": {}}
+    )
     tc.record(EventType.FILE_READ, {"path": "src/main.py", "lines_read": 45, "size_bytes": 1200})
-    tc.record(EventType.AGENT_THINKING, {"content": "I see the bug on line 23 where division uses //"})
-    tc.record(EventType.FILE_READ, {"path": "tests/test_main.py", "lines_read": 30, "size_bytes": 800})
+    tc.record(
+        EventType.AGENT_THINKING, {"content": "I see the bug on line 23 where division uses //"}
+    )
+    tc.record(
+        EventType.FILE_READ, {"path": "tests/test_main.py", "lines_read": 30, "size_bytes": 800}
+    )
     tc.new_turn()
     # Turn 1
-    tc.record(EventType.FILE_WRITE, {"path": "src/main.py", "lines_changed": 2, "diff": "-a // b\n+a / b"})
-    tc.record(EventType.COMMAND_EXEC, {"command": "python -m pytest tests/ -v", "workdir": "/workspace"})
+    tc.record(
+        EventType.FILE_WRITE, {"path": "src/main.py", "lines_changed": 2, "diff": "-a // b\n+a / b"}
+    )
+    tc.record(
+        EventType.COMMAND_EXEC, {"command": "python -m pytest tests/ -v", "workdir": "/workspace"}
+    )
     tc.record(
         EventType.TEST_RESULT,
         {
@@ -49,6 +60,7 @@ def _viewer_and_buf() -> tuple[TraceViewer, StringIO]:
 
 
 # --- show_timeline tests ---
+
 
 def test_show_timeline_renders_all_turns(sample_trace: TraceCollector) -> None:
     viewer, buf = _viewer_and_buf()
@@ -81,6 +93,7 @@ def test_show_timeline_shows_summary(sample_trace: TraceCollector) -> None:
 
 # --- show_events tests ---
 
+
 def test_show_events_filters_by_type(sample_trace: TraceCollector) -> None:
     viewer, buf = _viewer_and_buf()
     viewer.show_events(sample_trace, event_types=[EventType.FILE_READ])
@@ -102,6 +115,7 @@ def test_show_events_shows_filter_count(sample_trace: TraceCollector) -> None:
 
 # --- show_turn tests ---
 
+
 def test_show_turn_detail_shows_full_content(sample_trace: TraceCollector) -> None:
     viewer, buf = _viewer_and_buf()
     viewer.show_turn(sample_trace, turn_number=0)
@@ -112,6 +126,7 @@ def test_show_turn_detail_shows_full_content(sample_trace: TraceCollector) -> No
 
 # --- show_files_touched tests ---
 
+
 def test_show_files_touched_tree(sample_trace: TraceCollector) -> None:
     viewer, buf = _viewer_and_buf()
     viewer.show_files_touched(sample_trace)
@@ -121,6 +136,7 @@ def test_show_files_touched_tree(sample_trace: TraceCollector) -> None:
 
 
 # --- show_token_breakdown tests ---
+
 
 def test_show_token_breakdown_bars(sample_trace: TraceCollector) -> None:
     viewer, buf = _viewer_and_buf()
@@ -133,13 +149,14 @@ def test_show_token_breakdown_bars(sample_trace: TraceCollector) -> None:
 
 # --- helper tests ---
 
+
 def test_format_relative_time_zero() -> None:
     import datetime
 
     viewer, _ = _viewer_and_buf()
     from agentbench.trace.events import TraceEvent
 
-    base = datetime.datetime(2024, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc)
+    base = datetime.datetime(2024, 1, 1, 0, 0, 0, tzinfo=datetime.UTC)
     event = TraceEvent(
         timestamp=base,
         event_type=EventType.AGENT_START,
@@ -155,7 +172,7 @@ def test_format_relative_time_seconds() -> None:
     viewer, _ = _viewer_and_buf()
     from agentbench.trace.events import TraceEvent
 
-    base = datetime.datetime(2024, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc)
+    base = datetime.datetime(2024, 1, 1, 0, 0, 0, tzinfo=datetime.UTC)
     event = TraceEvent(
         timestamp=base + datetime.timedelta(seconds=1.5),
         event_type=EventType.AGENT_START,
@@ -171,7 +188,7 @@ def test_format_relative_time_over_minute() -> None:
     viewer, _ = _viewer_and_buf()
     from agentbench.trace.events import TraceEvent
 
-    base = datetime.datetime(2024, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc)
+    base = datetime.datetime(2024, 1, 1, 0, 0, 0, tzinfo=datetime.UTC)
     event = TraceEvent(
         timestamp=base + datetime.timedelta(seconds=65),
         event_type=EventType.AGENT_START,

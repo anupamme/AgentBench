@@ -22,6 +22,7 @@ Claude Code CLI usage:
 The --output-format stream-json flag produces one JSON object per line with
 tool calls, file edits, and reasoning. This adapter parses that output.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -153,10 +154,14 @@ class ClaudeCodeAdapter(AgentAdapter):
 
         cmd = [
             self._claude_path,
-            "-p", task.prompt,
-            "--output-format", "stream-json",
-            "--max-turns", str(task.constraints.max_turns),
-            "--model", self.config.model,
+            "-p",
+            task.prompt,
+            "--output-format",
+            "stream-json",
+            "--max-turns",
+            str(task.constraints.max_turns),
+            "--model",
+            self.config.model,
         ]
 
         cwd = str(sandbox.host_workspace_path)
@@ -192,9 +197,7 @@ class ClaudeCodeAdapter(AgentAdapter):
                     elif msg_type == "result":
                         usage = event_data.get("usage", {})
                         nonlocal total_tokens
-                        total_tokens += (
-                            usage.get("input_tokens", 0) + usage.get("output_tokens", 0)
-                        )
+                        total_tokens += usage.get("input_tokens", 0) + usage.get("output_tokens", 0)
 
         async def _drain_stderr() -> str:
             chunks: list[bytes] = []
@@ -261,9 +264,7 @@ class ClaudeCodeAdapter(AgentAdapter):
             constraint_hit=constraint_hit,
         )
 
-    def _parse_stream_json_line(
-        self, line: str, trace: TraceCollector
-    ) -> dict[str, Any] | None:
+    def _parse_stream_json_line(self, line: str, trace: TraceCollector) -> dict[str, Any] | None:
         """
         Parse a single line of Claude Code's stream-json output and record trace events.
 

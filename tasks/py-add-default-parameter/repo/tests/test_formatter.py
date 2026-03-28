@@ -1,4 +1,4 @@
-from formatter import format_number, format_currency, format_percentage
+from formatter import format_currency, format_number, format_percentage
 
 
 def test_format_number_explicit():

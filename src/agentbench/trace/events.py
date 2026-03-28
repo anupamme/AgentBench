@@ -4,6 +4,7 @@ Trace event types and schemas.
 Every action an agent takes during a task run is recorded as a TraceEvent
 with a specific EventType and typed payload.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -14,41 +15,42 @@ from typing import Any
 
 class EventType(StrEnum):
     # Agent reasoning
-    AGENT_THINKING = "agent_thinking"       # Model reasoning/planning output
-    AGENT_MESSAGE = "agent_message"         # Agent's conversational message
+    AGENT_THINKING = "agent_thinking"  # Model reasoning/planning output
+    AGENT_MESSAGE = "agent_message"  # Agent's conversational message
 
     # Tool usage
-    TOOL_CALL = "tool_call"                 # Agent invoked a tool
-    TOOL_RESULT = "tool_result"             # Tool returned a result
+    TOOL_CALL = "tool_call"  # Agent invoked a tool
+    TOOL_RESULT = "tool_result"  # Tool returned a result
 
     # File operations
-    FILE_READ = "file_read"                 # Agent read a file
-    FILE_WRITE = "file_write"              # Agent created or modified a file
-    FILE_CREATE = "file_create"            # Agent created a new file
-    FILE_DELETE = "file_delete"            # Agent deleted a file
+    FILE_READ = "file_read"  # Agent read a file
+    FILE_WRITE = "file_write"  # Agent created or modified a file
+    FILE_CREATE = "file_create"  # Agent created a new file
+    FILE_DELETE = "file_delete"  # Agent deleted a file
 
     # Shell operations
-    COMMAND_EXEC = "command_exec"           # Agent executed a shell command
-    COMMAND_OUTPUT = "command_output"       # Output from a shell command
+    COMMAND_EXEC = "command_exec"  # Agent executed a shell command
+    COMMAND_OUTPUT = "command_output"  # Output from a shell command
 
     # Search/navigation operations
-    SEARCH = "search"                       # Agent searched for content
-    DIRECTORY_LIST = "directory_list"       # Agent listed directory contents
+    SEARCH = "search"  # Agent searched for content
+    DIRECTORY_LIST = "directory_list"  # Agent listed directory contents
 
     # Test operations
-    TEST_RUN = "test_run"                  # Agent ran a test suite
-    TEST_RESULT = "test_result"            # Test suite results
+    TEST_RUN = "test_run"  # Agent ran a test suite
+    TEST_RESULT = "test_result"  # Test suite results
 
     # Lifecycle
-    AGENT_START = "agent_start"            # Agent began working on the task
-    AGENT_DONE = "agent_done"              # Agent signaled completion
-    ERROR = "error"                        # An error occurred
-    CONSTRAINT_HIT = "constraint_hit"      # A constraint was hit (timeout, token limit, etc.)
+    AGENT_START = "agent_start"  # Agent began working on the task
+    AGENT_DONE = "agent_done"  # Agent signaled completion
+    ERROR = "error"  # An error occurred
+    CONSTRAINT_HIT = "constraint_hit"  # A constraint was hit (timeout, token limit, etc.)
 
 
 @dataclass
 class TokenUsage:
     """Token consumption for a single API call."""
+
     input_tokens: int = 0
     output_tokens: int = 0
     thinking_tokens: int = 0  # for models with extended thinking
@@ -63,13 +65,14 @@ class TokenUsage:
 @dataclass
 class TraceEvent:
     """A single recorded event in an agent's trace."""
+
     timestamp: datetime
     event_type: EventType
     data: dict[str, Any]
     duration_ms: int = 0
     token_usage: TokenUsage | None = None
     sequence_number: int = 0  # auto-assigned by TraceCollector
-    turn_number: int = 0      # auto-assigned by TraceCollector.new_turn()
+    turn_number: int = 0  # auto-assigned by TraceCollector.new_turn()
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize to a JSON-compatible dict."""

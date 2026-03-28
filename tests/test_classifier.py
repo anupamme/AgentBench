@@ -1,4 +1,5 @@
 """Tests for the failure classifier."""
+
 from __future__ import annotations
 
 from agentbench.classification.classifier import FailureClassifier
@@ -18,15 +19,26 @@ from agentbench.trace.events import EventType
 
 def _make_task(**overrides) -> TaskSpec:
     raw = {
-        "id": "test-task", "version": 1,
-        "metadata": {"difficulty": "easy", "task_type": "bug_fix", "languages": ["python"],
-                     "estimated_human_time_minutes": 5, "source": "test"},
-        "setup": {"repo": "/tmp", "commit": "HEAD",
-                  "files_to_highlight": overrides.pop("files_to_highlight", ["main.py"])},
+        "id": "test-task",
+        "version": 1,
+        "metadata": {
+            "difficulty": "easy",
+            "task_type": "bug_fix",
+            "languages": ["python"],
+            "estimated_human_time_minutes": 5,
+            "source": "test",
+        },
+        "setup": {
+            "repo": "/tmp",
+            "commit": "HEAD",
+            "files_to_highlight": overrides.pop("files_to_highlight", ["main.py"]),
+        },
         "prompt": "Fix the bug in the code.",
         "evaluation": {
             "primary": {
-                "type": "test_suite", "command": "pytest", "pass_condition": "exit_code == 0",
+                "type": "test_suite",
+                "command": "pytest",
+                "pass_condition": "exit_code == 0",
             }
         },
     }
@@ -36,9 +48,12 @@ def _make_task(**overrides) -> TaskSpec:
 
 def _make_score(primary_pass: bool = False, partial: float = 0.0, **kwargs) -> TaskScore:
     return TaskScore(
-        task_id="test", agent_name="test", run_id="run-1",
+        task_id="test",
+        agent_name="test",
+        run_id="run-1",
         correctness=CorrectnessResult(
-            primary_pass=primary_pass, partial_score=partial,
+            primary_pass=primary_pass,
+            partial_score=partial,
             secondary_results=kwargs.get("secondary", []),
         ),
         quality=QualityResult(diff_within_budget=kwargs.get("diff_within_budget", True)),

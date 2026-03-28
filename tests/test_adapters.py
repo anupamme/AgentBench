@@ -1,4 +1,5 @@
 """Tests for agent adapters."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -55,9 +56,7 @@ class TestAnthropicAPIAdapter:
         response.content = [tool_block]
         return response
 
-    async def test_adapter_records_agent_start(
-        self, mock_anthropic_response: MagicMock
-    ) -> None:
+    async def test_adapter_records_agent_start(self, mock_anthropic_response: MagicMock) -> None:
         """The adapter should record an AGENT_START event."""
         from agentbench.adapters.anthropic_api import AnthropicAPIAdapter
         from agentbench.core.models import TaskSpec

@@ -1,5 +1,4 @@
-import pytest
-from string_utils import slugify, truncate, camel_to_snake, pad_left, remove_vowels
+from string_utils import camel_to_snake, pad_left, remove_vowels, slugify, truncate
 
 
 class TestSlugify:

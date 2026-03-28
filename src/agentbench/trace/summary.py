@@ -1,6 +1,7 @@
 """
 Trace Summary — aggregate statistics computed from a trace.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -11,14 +12,15 @@ from agentbench.trace.events import EventType, TraceEvent
 @dataclass
 class TraceSummary:
     """Aggregate statistics for a completed trace."""
+
     total_events: int = 0
     total_tokens: int = 0
     input_tokens: int = 0
     output_tokens: int = 0
     thinking_tokens: int = 0
-    total_turns: int = 0               # number of TOOL_CALL events (proxy for turns)
+    total_turns: int = 0  # number of TOOL_CALL events (proxy for turns)
     total_tool_calls: int = 0
-    total_api_calls: int = 0           # number of events with token_usage
+    total_api_calls: int = 0  # number of events with token_usage
     files_read: list[str] = field(default_factory=list)
     files_written: list[str] = field(default_factory=list)
     files_deleted: list[str] = field(default_factory=list)
@@ -85,8 +87,6 @@ class TraceSummary:
         summary.files_read = list(files_read)
         summary.files_written = list(files_written)
         summary.files_deleted = list(files_deleted)
-        summary.wall_clock_seconds = (
-            events[-1].timestamp - events[0].timestamp
-        ).total_seconds()
+        summary.wall_clock_seconds = (events[-1].timestamp - events[0].timestamp).total_seconds()
 
         return summary

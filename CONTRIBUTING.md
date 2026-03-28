@@ -34,10 +34,10 @@ For most contributions, running the unit tests is sufficient. CI runs both categ
 
 ```bash
 # Lint
-ruff check src/ tests/ tools/
+ruff check src/ tests/
 
 # Format check (or auto-fix with --fix)
-ruff format src/ tests/ tools/
+ruff format src/ tests/
 
 # Type check
 mypy src/agentbench/ --ignore-missing-imports

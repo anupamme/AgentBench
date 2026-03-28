@@ -9,6 +9,7 @@ Each action in the script is a dict with:
 - For "file_read": {"path": str}
 - For "done": {}
 """
+
 from __future__ import annotations
 
 import time
@@ -55,11 +56,14 @@ class MockAdapter(AgentAdapter):
         start_time = time.monotonic()
         turn_count = 0
 
-        trace.record(EventType.AGENT_START, {
-            "prompt": task.prompt,
-            "model": "mock",
-            "config": {"script_length": len(self._script)},
-        })
+        trace.record(
+            EventType.AGENT_START,
+            {
+                "prompt": task.prompt,
+                "model": "mock",
+                "config": {"script_length": len(self._script)},
+            },
+        )
 
         for action in self._script:
             action_type = action["type"]
@@ -82,9 +86,10 @@ class MockAdapter(AgentAdapter):
                 path = action["path"]
                 content = action["content"]
                 import base64
+
                 encoded = base64.b64encode(content.encode()).decode()
                 cmd = (
-                    f"python3 -c \"import base64,pathlib; "
+                    f'python3 -c "import base64,pathlib; '
                     f"pathlib.Path('{path}').write_text("
                     f"base64.b64decode('{encoded}').decode())\""
                 )

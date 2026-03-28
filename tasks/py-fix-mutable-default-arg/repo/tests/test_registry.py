@@ -1,5 +1,5 @@
 import pytest
-from registry import register, get, clear
+from registry import clear, get, register
 
 
 @pytest.fixture(autouse=True)

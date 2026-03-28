@@ -1,4 +1,5 @@
 import threading
+
 import pytest
 from bounded_queue import BoundedQueue, QueueEmpty, QueueFull
 
@@ -64,8 +65,10 @@ def test_multi_producer_consumer():
     n = 20
     t1 = threading.Thread(target=producer, args=(n,))
     t2 = threading.Thread(target=consumer, args=(n,))
-    t1.start(); t2.start()
-    t1.join(); t2.join()
+    t1.start()
+    t2.start()
+    t1.join()
+    t2.join()
     assert len(results) == n
 
 

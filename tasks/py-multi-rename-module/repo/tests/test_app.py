@@ -1,6 +1,6 @@
-from utils import slugify, truncate, capitalize_words
 from app import make_slug
 from models import Article
+from utils import capitalize_words, slugify, truncate
 
 
 def test_slugify():

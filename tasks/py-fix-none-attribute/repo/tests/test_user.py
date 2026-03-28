@@ -1,4 +1,4 @@
-from user import User, Profile
+from user import Profile, User
 
 
 def test_display_name_with_profile():

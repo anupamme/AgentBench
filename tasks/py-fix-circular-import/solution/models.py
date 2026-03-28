@@ -1,5 +1,5 @@
-from utils import format_role
 from constants import DEFAULT_ROLE
+from utils import format_role
 
 
 class User:

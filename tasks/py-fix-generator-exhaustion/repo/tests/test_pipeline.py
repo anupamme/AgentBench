@@ -1,4 +1,4 @@
-from pipeline import process, consume_sum, consume_count
+from pipeline import consume_count, consume_sum, process
 
 
 def test_consume_sum():

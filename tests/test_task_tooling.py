@@ -1,4 +1,5 @@
 """Tests for task scaffolding and deep validation tooling."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -130,10 +131,12 @@ def _make_task_dir(tmp_path: Path, *, with_repo: bool = True, with_solution: boo
 
     if not with_repo:
         import shutil
+
         shutil.rmtree(task_dir / "repo")
 
     if not with_solution:
         import shutil
+
         shutil.rmtree(task_dir / "solution")
 
     return task_dir

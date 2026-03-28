@@ -1,6 +1,6 @@
 """Route definitions for the TODO API."""
-from flask import Blueprint, jsonify, request
 
+from flask import Blueprint, jsonify, request
 from models import TodoStore
 
 todos_bp = Blueprint("todos", __name__)

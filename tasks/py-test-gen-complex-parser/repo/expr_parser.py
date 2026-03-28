@@ -23,8 +23,8 @@ class Lexer:
             start = self.pos
             while self.pos < len(self.text) and self.text[self.pos].isdigit():
                 self.pos += 1
-            return 'NUM', int(self.text[start:self.pos])
-        if ch in '+-*/()':
+            return "NUM", int(self.text[start : self.pos])
+        if ch in "+-*/()":
             self.pos += 1
             return ch, ch
         raise ParseError(f"Unexpected character: {ch!r} at position {self.pos}")
@@ -51,10 +51,10 @@ class Parser:
         left = self.term()
         while True:
             tok, _ = self.lexer.peek()
-            if tok == '+':
+            if tok == "+":
                 self.lexer.next_token()
                 left += self.term()
-            elif tok == '-':
+            elif tok == "-":
                 self.lexer.next_token()
                 left -= self.term()
             else:
@@ -65,10 +65,10 @@ class Parser:
         left = self.factor()
         while True:
             tok, _ = self.lexer.peek()
-            if tok == '*':
+            if tok == "*":
                 self.lexer.next_token()
                 left *= self.factor()
-            elif tok == '/':
+            elif tok == "/":
                 self.lexer.next_token()
                 right = self.factor()
                 if right == 0:
@@ -80,17 +80,17 @@ class Parser:
 
     def factor(self) -> int:
         tok, val = self.lexer.peek()
-        if tok == 'NUM':
+        if tok == "NUM":
             self.lexer.next_token()
             return val
-        if tok == '-':
+        if tok == "-":
             self.lexer.next_token()
             return -self.factor()
-        if tok == '(':
+        if tok == "(":
             self.lexer.next_token()
             result = self.expr()
             tok, _ = self.lexer.next_token()
-            if tok != ')':
+            if tok != ")":
                 raise ParseError("Expected ')'")
             return result
         raise ParseError(f"Unexpected token: {tok!r}")

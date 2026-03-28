@@ -1,6 +1,7 @@
 import functools
+
 import jwt
-from flask import request, jsonify
+from flask import jsonify, request
 
 SECRET_KEY = "test-secret"
 
@@ -17,4 +18,5 @@ def require_auth(f):
         except jwt.PyJWTError:
             return jsonify({"error": "invalid token"}), 403
         return f(*args, **kwargs)
+
     return decorated

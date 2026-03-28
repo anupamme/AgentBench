@@ -8,6 +8,7 @@ results/<experiment-name>/<task-id>/<agent>/<run-id>/
 ├── diff.patch          # workspace diff
 └── metadata.json       # task spec, agent config, timestamps
 """
+
 from __future__ import annotations
 
 import json
@@ -61,6 +62,7 @@ class RunStorage:
 
     def load_trace(self) -> TraceCollector:
         from agentbench.trace.collector import TraceCollector
+
         return TraceCollector.load(self.run_dir / "trace.json")
 
     def save_score(self, score: TaskScore, failure: FailureClassification | None) -> Path:

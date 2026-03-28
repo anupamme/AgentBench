@@ -1,4 +1,5 @@
 """Tests for the run orchestrator."""
+
 from __future__ import annotations
 
 import json
@@ -232,9 +233,7 @@ class TestRunSuiteSequential:
 
         adapter = _make_mock_adapter()
         orchestrator = Orchestrator(output_dir=tmp_path, sandbox_manager=mgr)
-        orchestrator._scorer.score = AsyncMock(
-            side_effect=[_make_score(t.id, True) for t in tasks]
-        )
+        orchestrator._scorer.score = AsyncMock(side_effect=[_make_score(t.id, True) for t in tasks])
         orchestrator._classifier.classify = MagicMock(return_value=None)
 
         results = await orchestrator.run_suite(tasks, adapter, parallelism=1)
@@ -274,9 +273,7 @@ class TestRunSuiteParallel:
 
 
 class TestFailureClassification:
-    async def test_failure_classification_assigned_for_failing_run(
-        self, tmp_path: Path
-    ) -> None:
+    async def test_failure_classification_assigned_for_failing_run(self, tmp_path: Path) -> None:
         task = _make_task()
         sandbox = _make_mock_sandbox()
         mgr = _make_mock_sandbox_manager(sandbox)

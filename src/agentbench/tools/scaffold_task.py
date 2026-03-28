@@ -4,6 +4,7 @@ Task scaffolding tool — creates a new task directory with boilerplate.
 Usage:
     agentbench scaffold --id my-task-name --type bug_fix --difficulty medium --language python
 """
+
 from __future__ import annotations
 
 from pathlib import Path
