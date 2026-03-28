@@ -1,6 +1,7 @@
 """
 Adapter Registry — discovers and instantiates agent adapters by name.
 """
+
 from __future__ import annotations
 
 import importlib

@@ -1,6 +1,6 @@
 """Flask application factory for the TODO API."""
-from flask import Flask
 
+from flask import Flask
 from routes import todos_bp
 
 

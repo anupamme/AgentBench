@@ -1,11 +1,12 @@
+from pipeline import Pipeline
 from stage import Stage
 from stages.double import DoubleStage
 from stages.filter import FilterStage
-from pipeline import Pipeline
 
 
 def test_stage_is_abstract():
     import inspect
+
     assert inspect.isabstract(Stage)
 
 

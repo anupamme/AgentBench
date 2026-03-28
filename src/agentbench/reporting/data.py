@@ -1,11 +1,12 @@
 """
 Report Data Loader — reads stored results into analysis-ready structures.
 """
+
 from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -17,9 +18,9 @@ class RunData:
     agent_name: str
     run_id: str
     passed: bool
-    score: dict | None              # TaskScore.to_dict() format
-    result: dict | None             # AgentResult dict
-    failure_category: str | None    # FailureCategory value
+    score: dict[str, Any] | None  # TaskScore.to_dict() format
+    result: dict[str, Any] | None  # AgentResult dict
+    failure_category: str | None  # FailureCategory value
     total_tokens: int = 0
     total_turns: int = 0
     wall_clock_seconds: float = 0.0
@@ -28,6 +29,7 @@ class RunData:
 @dataclass
 class ExperimentData:
     """All results from a single experiment or result directory."""
+
     base_dir: Path
     runs: list[RunData] = field(default_factory=list)
 
@@ -64,8 +66,8 @@ class ExperimentData:
                     agent_name = agent_dir.name
                     run_id = run_dir.name
 
-                    score_data: dict | None = None
-                    result_data: dict | None = None
+                    score_data: dict[str, Any] | None = None
+                    result_data: dict[str, Any] | None = None
 
                     score_path = run_dir / "score.json"
                     if score_path.exists():
@@ -100,18 +102,20 @@ class ExperimentData:
 
                     failure_category = score_data.get("failure_category") if score_data else None
 
-                    experiment.runs.append(RunData(
-                        task_id=task_id,
-                        agent_name=agent_name,
-                        run_id=run_id,
-                        passed=passed,
-                        score=score_data,
-                        result=result_data,
-                        failure_category=failure_category,
-                        total_tokens=total_tokens,
-                        total_turns=total_turns,
-                        wall_clock_seconds=wall_clock_seconds,
-                    ))
+                    experiment.runs.append(
+                        RunData(
+                            task_id=task_id,
+                            agent_name=agent_name,
+                            run_id=run_id,
+                            passed=passed,
+                            score=score_data,
+                            result=result_data,
+                            failure_category=failure_category,
+                            total_tokens=total_tokens,
+                            total_turns=total_turns,
+                            wall_clock_seconds=wall_clock_seconds,
+                        )
+                    )
 
         return experiment
 

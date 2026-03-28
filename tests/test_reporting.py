@@ -1,4 +1,5 @@
 """Tests for the reporting engine using synthetic RunData objects."""
+
 from __future__ import annotations
 
 from io import StringIO
@@ -46,6 +47,7 @@ def _silent_console() -> Console:
 
 # --- ExperimentData helpers ---
 
+
 def test_pass_rate_all_agents() -> None:
     data = _make_experiment(
         _make_run("task-a", "agent-1", "r1", passed=True),
@@ -89,6 +91,7 @@ def test_by_agent_grouping() -> None:
 
 # --- Reporter ---
 
+
 def test_summary_table_renders() -> None:
     data = _make_experiment(
         _make_run("task-a", "agent-1", "r1", passed=True),
@@ -122,8 +125,12 @@ def test_markdown_report_contains_sections() -> None:
     data = _make_experiment(
         _make_run("task-a", "agent-1", "r1", passed=True, total_tokens=800),
         _make_run(
-            "task-b", "agent-1", "r2", passed=False,
-            failure_category="context_miss", total_tokens=1200,
+            "task-b",
+            "agent-1",
+            "r2",
+            passed=False,
+            failure_category="context_miss",
+            total_tokens=1200,
         ),
     )
     reporter = Reporter(_silent_console())
@@ -137,6 +144,7 @@ def test_markdown_report_contains_sections() -> None:
 
 
 # --- ComparisonEngine ---
+
 
 def test_comparison_pass_rate_delta() -> None:
     baseline = _make_experiment(

@@ -1,4 +1,5 @@
 """Tests for core Pydantic models and task loading."""
+
 from __future__ import annotations
 
 import json

@@ -1,5 +1,4 @@
 import asyncio
-from typing import List
 
 
 async def fetch(url: str) -> str:
@@ -8,6 +7,6 @@ async def fetch(url: str) -> str:
     return f"content-of-{url}"
 
 
-async def fetch_all(urls: List[str]) -> List[str]:
+async def fetch_all(urls: list[str]) -> list[str]:
     """Fetch all URLs concurrently and return list of results."""
     return await asyncio.gather(*[fetch(url) for url in urls])

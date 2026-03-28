@@ -11,6 +11,7 @@ Pipeline per task:
 7. Store all outputs
 8. Teardown sandbox
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -183,8 +184,6 @@ class Orchestrator:
                         progress.advance(progress_task)
                         return result
 
-                results = list(
-                    await asyncio.gather(*[run_with_semaphore(t) for t in tasks])
-                )
+                results = list(await asyncio.gather(*[run_with_semaphore(t) for t in tasks]))
 
         return results

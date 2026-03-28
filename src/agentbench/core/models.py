@@ -1,6 +1,7 @@
 """
 Core data models — Pydantic models for task specs, constraints, results, etc.
 """
+
 from __future__ import annotations
 
 from enum import StrEnum
@@ -77,7 +78,10 @@ class EvalCriterion(BaseModel):
     def validate_type_fields(self) -> EvalCriterion:
         """Ensure required fields are present based on eval type."""
         command_required = (
-            EvalType.TEST_SUITE, EvalType.LINT, EvalType.TYPE_CHECK, EvalType.CUSTOM_SCRIPT
+            EvalType.TEST_SUITE,
+            EvalType.LINT,
+            EvalType.TYPE_CHECK,
+            EvalType.CUSTOM_SCRIPT,
         )
         if self.type in command_required and not self.command:
             raise ValueError(f"'command' is required for eval type '{self.type.value}'")

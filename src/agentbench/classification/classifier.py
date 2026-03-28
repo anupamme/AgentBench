@@ -4,6 +4,7 @@ Failure Classifier — assigns failure categories to failed task runs.
 Uses heuristic rules applied in priority order. Each rule checks specific
 conditions on the trace and score, and returns a classification if matched.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

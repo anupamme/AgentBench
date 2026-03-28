@@ -3,6 +3,7 @@
 Uses Jinja2 templates to produce structured markdown documents
 suitable for GitHub READMEs, blog posts, or documentation.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -41,7 +42,7 @@ class MarkdownReporter:
         Returns: Complete markdown string.
         """
         template = self.env.get_template("suite_report.md.j2")
-        return template.render(s=experiment_summary)
+        return str(template.render(s=experiment_summary))
 
     def generate_comparison_report(
         self,
@@ -59,7 +60,7 @@ class MarkdownReporter:
         Returns: Complete markdown string.
         """
         template = self.env.get_template("comparison_report.md.j2")
-        return template.render(cmp=comparison, a=exp_a_summary, b=exp_b_summary)
+        return str(template.render(cmp=comparison, a=exp_a_summary, b=exp_b_summary))
 
     def save(self, content: str, output_path: Path) -> None:
         """Save markdown content to a file."""

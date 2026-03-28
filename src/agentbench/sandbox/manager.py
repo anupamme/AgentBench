@@ -8,6 +8,7 @@ Responsibilities:
 - Enforce resource limits (CPU, memory, timeout)
 - Clean up containers after runs
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -23,7 +24,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import docker
 import docker.errors
@@ -106,13 +107,13 @@ class SandboxManager:
     DEFAULT_IMAGE = "python:3.12-slim"
     WORKSPACE_CONTAINER_PATH = "/workspace"
 
-    def __init__(self, docker_client: docker.DockerClient | None = None) -> None:
+    def __init__(self, docker_client: Any = None) -> None:
         """
         Args:
             docker_client: Optional pre-configured Docker client.
                            If None, connects to the local Docker daemon.
         """
-        self._client: docker.DockerClient = docker_client or docker.from_env()
+        self._client: Any = docker_client or docker.from_env()  # type: ignore[attr-defined]
         self._active_sandboxes: dict[str, Sandbox] = {}
 
     async def create(
@@ -174,9 +175,7 @@ class SandboxManager:
     async def exec(self, sandbox: Sandbox, command: str, timeout: int = 60) -> ExecResult:
         """Execute a command inside the sandbox."""
         try:
-            container = await asyncio.to_thread(
-                self._client.containers.get, sandbox.container_id
-            )
+            container = await asyncio.to_thread(self._client.containers.get, sandbox.container_id)
         except docker.errors.NotFound as e:
             raise SandboxError(f"Container not found: {sandbox.container_id}") from e
 
@@ -273,11 +272,13 @@ class SandboxManager:
                 files_deleted.append(path)
 
         total_added = sum(
-            1 for line in raw_diff.splitlines()
+            1
+            for line in raw_diff.splitlines()
             if line.startswith("+") and not line.startswith("+++")
         )
         total_deleted = sum(
-            1 for line in raw_diff.splitlines()
+            1
+            for line in raw_diff.splitlines()
             if line.startswith("-") and not line.startswith("---")
         )
 
@@ -293,9 +294,7 @@ class SandboxManager:
     async def teardown(self, sandbox: Sandbox) -> None:
         """Stop and remove the sandbox container. Clean up host workspace."""
         try:
-            container = await asyncio.to_thread(
-                self._client.containers.get, sandbox.container_id
-            )
+            container = await asyncio.to_thread(self._client.containers.get, sandbox.container_id)
             await asyncio.to_thread(container.stop, timeout=10)
             await asyncio.to_thread(container.remove, force=True)
         except docker.errors.NotFound:
@@ -362,9 +361,7 @@ class SandboxManager:
                     text=True,
                 )
             except subprocess.CalledProcessError as e:
-                raise SandboxError(
-                    f"Git operation failed: {e.cmd}\nstderr: {e.stderr}"
-                ) from e
+                raise SandboxError(f"Git operation failed: {e.cmd}\nstderr: {e.stderr}") from e
 
         await asyncio.to_thread(_do_clone)
 

@@ -1,6 +1,7 @@
 """
 Report Generator — produces formatted reports from evaluation results.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -138,7 +139,7 @@ class Reporter:
         3. Efficiency Comparison — token/turn/time comparison
         4. Per-Task Results — full table
         """
-        return Template(_MARKDOWN_TEMPLATE).render(data=data)
+        return str(Template(_MARKDOWN_TEMPLATE).render(data=data))
 
     def failure_report(self, data: ExperimentData) -> None:
         """

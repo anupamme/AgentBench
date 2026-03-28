@@ -25,7 +25,9 @@ def main():
             continue
         try:
             task = loader.load_task(task_yaml)
-            print(f"  \u2713 {task.id} ({task.metadata.difficulty.value}, {task.metadata.task_type.value})")
+            diff = task.metadata.difficulty.value
+            ttype = task.metadata.task_type.value
+            print(f"  \u2713 {task.id} ({diff}, {ttype})")
             valid += 1
         except TaskLoadError as e:
             errors.append(f"  \u2717 {task_dir.name}: {e.errors}")

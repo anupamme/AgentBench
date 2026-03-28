@@ -84,3 +84,4 @@ python_version = "3.12"
 strict = true
 warn_return_any = true
 mypy_path = "src"
+disable_error_code = ["misc"]  # Typer decorators are intentionally untyped

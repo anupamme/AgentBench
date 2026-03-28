@@ -8,6 +8,7 @@ This is the reference adapter implementation. It provides Claude with two tools:
 The adapter manages the full conversation loop, tracks token usage,
 and enforces constraints (turn limit, token budget, wall clock timeout).
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -148,15 +149,16 @@ class AnthropicAPIAdapter(AgentAdapter):
         turn_count = 0
         total_tokens = 0
 
-        trace.record(EventType.AGENT_START, {
-            "prompt": task.prompt,
-            "model": self.config.model,
-            "config": self.config.extra,
-        })
+        trace.record(
+            EventType.AGENT_START,
+            {
+                "prompt": task.prompt,
+                "model": self.config.model,
+                "config": self.config.extra,
+            },
+        )
 
-        messages: list[dict[str, Any]] = [
-            {"role": "user", "content": task.prompt}
-        ]
+        messages: list[dict[str, Any]] = [{"role": "user", "content": task.prompt}]
 
         while True:
             elapsed = time.monotonic() - start_time
@@ -201,8 +203,8 @@ class AnthropicAPIAdapter(AgentAdapter):
                     max_tokens=self.config.max_tokens_per_response,
                     temperature=self.config.temperature,
                     system=SYSTEM_PROMPT,
-                    tools=TOOLS,  # type: ignore[arg-type]
-                    messages=messages,
+                    tools=TOOLS,  # type: ignore[arg-type, unused-ignore]
+                    messages=messages,  # type: ignore[arg-type, unused-ignore]
                 )
                 api_duration_ms = int((time.monotonic() - api_start) * 1000)
             except Exception as e:
@@ -248,12 +250,14 @@ class AnthropicAPIAdapter(AgentAdapter):
                     )
                     trace.record_tool_result(block.name, tool_output, is_error=is_error)
 
-                    tool_results.append({
-                        "type": "tool_result",
-                        "tool_use_id": block.id,
-                        "content": tool_output,
-                        "is_error": is_error,
-                    })
+                    tool_results.append(
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": block.id,
+                            "content": tool_output,
+                            "is_error": is_error,
+                        }
+                    )
 
             # --- Update messages ---
             messages.append({"role": "assistant", "content": response.content})
@@ -329,7 +333,7 @@ class AnthropicAPIAdapter(AgentAdapter):
         """Map a container-side path (absolute or relative) to the host filesystem."""
         workspace_prefix = sandbox.workspace_path  # e.g. "/workspace"
         if path.startswith(workspace_prefix + "/"):
-            rel = path[len(workspace_prefix) + 1:]
+            rel = path[len(workspace_prefix) + 1 :]
         elif path == workspace_prefix:
             rel = ""
         else:

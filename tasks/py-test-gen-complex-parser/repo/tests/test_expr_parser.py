@@ -1,5 +1,4 @@
-from expr_parser import evaluate, ParseError
-import pytest
+from expr_parser import evaluate
 
 
 def test_integer():

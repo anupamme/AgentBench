@@ -1,6 +1,5 @@
 from report import Report
 
-
 RECORDS = [
     {"name": "Alice", "score": 95, "grade": "A"},
     {"name": "Bob", "score": 82, "grade": "B"},
@@ -10,6 +9,7 @@ RECORDS = [
 def test_to_json():
     r = Report("Test", RECORDS)
     import json
+
     data = json.loads(r.to_json())
     assert data["title"] == "Test"
     assert len(data["records"]) == 2

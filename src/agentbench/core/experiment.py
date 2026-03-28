@@ -1,10 +1,11 @@
 """
 Experiment configuration — defines multi-agent comparison experiments.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import yaml
 
@@ -19,14 +20,14 @@ class AgentExperimentConfig:
     model: str = "claude-sonnet-4-20250514"
     temperature: float = 0.0
     max_tokens_per_response: int = 8192
-    extra: dict = field(default_factory=dict)
+    extra: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class ExperimentConfig:
     name: str
-    suite: str                               # Suite name or path
-    runs_per_task: int = 1                   # Number of runs per task per agent
+    suite: str  # Suite name or path
+    runs_per_task: int = 1  # Number of runs per task per agent
     agents: list[AgentExperimentConfig] = field(default_factory=list)
     parallelism: int = 1
 

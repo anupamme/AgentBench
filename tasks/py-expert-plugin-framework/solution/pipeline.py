@@ -1,6 +1,3 @@
-from stage import Stage
-
-
 class Pipeline:
     def __init__(self, stages: list):
         self.stages = stages

@@ -5,6 +5,7 @@ Agent adapters call methods on TraceCollector to record events as they happen.
 The collector assigns sequence numbers, timestamps, and stores events in memory.
 After a run, the trace can be serialized to JSON and written to disk.
 """
+
 from __future__ import annotations
 
 import json
@@ -76,18 +77,14 @@ class TraceCollector:
     def record_file_read(self, path: str, size_bytes: int = 0) -> TraceEvent:
         return self.record(EventType.FILE_READ, {"path": path, "size_bytes": size_bytes})
 
-    def record_file_write(
-        self, path: str, size_bytes: int = 0, is_new: bool = False
-    ) -> TraceEvent:
+    def record_file_write(self, path: str, size_bytes: int = 0, is_new: bool = False) -> TraceEvent:
         return self.record(
             EventType.FILE_WRITE,
             {"path": path, "size_bytes": size_bytes, "is_new": is_new},
         )
 
     def record_command(self, command: str, working_dir: str = "") -> TraceEvent:
-        return self.record(
-            EventType.COMMAND_EXEC, {"command": command, "working_dir": working_dir}
-        )
+        return self.record(EventType.COMMAND_EXEC, {"command": command, "working_dir": working_dir})
 
     def record_command_output(
         self, stdout: str, stderr: str, exit_code: int, duration_ms: int = 0

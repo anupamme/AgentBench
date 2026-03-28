@@ -1,4 +1,5 @@
 """Failure taxonomy — categories of agent failure modes."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -7,6 +8,7 @@ from enum import StrEnum
 
 class FailureCategory(StrEnum):
     """Primary failure categories."""
+
     CONTEXT_MISS = "context_miss"
     # Agent didn't read the right files. Relevant files (from task spec's
     # files_to_highlight or known fix locations) not in trace's FILE_READ events.
@@ -54,6 +56,7 @@ class FailureCategory(StrEnum):
 @dataclass
 class FailureClassification:
     """Result of failure classification for a single run."""
+
     primary_category: FailureCategory
     confidence: float  # 0.0–1.0, how confident we are in this classification
     evidence: list[str]  # Human-readable list of evidence supporting this classification

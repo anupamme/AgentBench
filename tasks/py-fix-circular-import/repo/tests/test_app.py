@@ -1,4 +1,4 @@
-from app import create_user, check_default
+from app import check_default, create_user
 
 
 def test_create_default_user():

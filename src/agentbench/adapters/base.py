@@ -4,6 +4,7 @@ Agent Adapter — abstract base class for agentic coding tool integrations.
 Each adapter wraps a specific tool and implements solve() to attempt
 a task in a sandbox while recording all actions to a TraceCollector.
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -30,12 +31,12 @@ class AgentConfig:
 class AgentResult:
     """Result of an agent's attempt to solve a task."""
 
-    completed: bool                    # Did the agent signal it was done?
-    reason: str                        # "completed", "gave_up", "constraint_hit", "error"
-    total_turns: int                   # Number of interaction turns
-    total_tokens_used: int             # Total tokens consumed
-    wall_clock_seconds: float          # Total wall clock time
-    error: str | None = None           # Error message if reason == "error"
+    completed: bool  # Did the agent signal it was done?
+    reason: str  # "completed", "gave_up", "constraint_hit", "error"
+    total_turns: int  # Number of interaction turns
+    total_tokens_used: int  # Total tokens consumed
+    wall_clock_seconds: float  # Total wall clock time
+    error: str | None = None  # Error message if reason == "error"
     constraint_hit: str | None = None  # Which constraint if reason == "constraint_hit"
 
 

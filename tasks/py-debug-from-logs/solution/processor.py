@@ -3,7 +3,7 @@ def batch_process(items: list, batch_size: int) -> list:
     results = []
     i = 0
     while i < len(items):
-        batch = items[i:i + batch_size]
+        batch = items[i : i + batch_size]
         results.append(sum(batch))
         i += batch_size
     return results

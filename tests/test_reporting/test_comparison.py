@@ -1,4 +1,5 @@
 """Tests for ExperimentComparator, mcnemar_test, and bootstrap_confidence_interval."""
+
 from __future__ import annotations
 
 import pytest
@@ -11,10 +12,10 @@ from agentbench.reporting.comparison import (
 )
 from agentbench.reporting.data import RunData
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_run(
     task_id: str,
@@ -48,6 +49,7 @@ class MockStore:
 # ---------------------------------------------------------------------------
 # mcnemar_test
 # ---------------------------------------------------------------------------
+
 
 def test_mcnemar_no_discordance() -> None:
     p = ExperimentComparator.mcnemar_test(0, 0)
@@ -84,6 +86,7 @@ def test_mcnemar_continuity_correction() -> None:
 # bootstrap_confidence_interval
 # ---------------------------------------------------------------------------
 
+
 def test_bootstrap_ci_contains_true_mean() -> None:
     values = [1.0, 2.0, 3.0, 4.0, 5.0]
     estimate, lower, upper = ExperimentComparator.bootstrap_confidence_interval(values)
@@ -107,10 +110,13 @@ def test_bootstrap_ci_empty() -> None:
 # ExperimentComparator.compare
 # ---------------------------------------------------------------------------
 
+
 def test_compare_identifies_regressions() -> None:
     store = MockStore()
     store.add("exp-a", _make_run("task-1", "agent-x", passed=True))
-    store.add("exp-b", _make_run("task-1", "agent-x", passed=False, failure_category="context_miss"))
+    store.add(
+        "exp-b", _make_run("task-1", "agent-x", passed=False, failure_category="context_miss")
+    )
 
     comparator = ExperimentComparator()
     result = comparator.compare("exp-a", "exp-b", store)
@@ -121,7 +127,9 @@ def test_compare_identifies_regressions() -> None:
 
 def test_compare_identifies_improvements() -> None:
     store = MockStore()
-    store.add("exp-a", _make_run("task-2", "agent-x", passed=False, failure_category="wrong_diagnosis"))
+    store.add(
+        "exp-a", _make_run("task-2", "agent-x", passed=False, failure_category="wrong_diagnosis")
+    )
     store.add("exp-b", _make_run("task-2", "agent-x", passed=True))
 
     comparator = ExperimentComparator()
@@ -160,10 +168,16 @@ def test_compare_failure_shifts() -> None:
     store = MockStore()
     # exp-a: 5 context_miss failures
     for i in range(5):
-        store.add("exp-a", _make_run(f"task-{i}", "agent-x", passed=False, failure_category="context_miss"))
+        store.add(
+            "exp-a",
+            _make_run(f"task-{i}", "agent-x", passed=False, failure_category="context_miss"),
+        )
     # exp-b: 3 context_miss failures (2 improved)
     for i in range(3):
-        store.add("exp-b", _make_run(f"task-{i}", "agent-x", passed=False, failure_category="context_miss"))
+        store.add(
+            "exp-b",
+            _make_run(f"task-{i}", "agent-x", passed=False, failure_category="context_miss"),
+        )
     for i in range(3, 5):
         store.add("exp-b", _make_run(f"task-{i}", "agent-x", passed=True))
 

@@ -1,4 +1,5 @@
 """Tests for the trace capture system."""
+
 from __future__ import annotations
 
 import json

@@ -4,6 +4,7 @@ Multi-dimensional scoring pipeline.
 Takes a completed run (sandbox + trace + eval spec) and produces a TaskScore
 across four dimensions: correctness, quality, efficiency, process.
 """
+
 from __future__ import annotations
 
 import re
@@ -69,7 +70,11 @@ class Scorer:
         )
 
     async def _score_correctness(
-        self, task: TaskSpec, sandbox: Sandbox, sandbox_manager: SandboxManager, diff: FileDiff,
+        self,
+        task: TaskSpec,
+        sandbox: Sandbox,
+        sandbox_manager: SandboxManager,
+        diff: FileDiff,
     ) -> CorrectnessResult:
         """
         Run the primary and secondary evaluation criteria.
@@ -86,8 +91,10 @@ class Scorer:
         - For other types: run the command and check exit code
         """
         # Primary evaluation
+        assert task.evaluation.primary.command is not None
         primary_result = await sandbox_manager.exec(
-            sandbox, task.evaluation.primary.command,
+            sandbox,
+            task.evaluation.primary.command,
             timeout=task.evaluation.primary.timeout_seconds,
         )
         primary_pass = primary_result.exit_code == 0
@@ -99,21 +106,29 @@ class Scorer:
             if criterion.type == EvalType.DIFF_SIZE:
                 total_changed = diff.total_lines_added + diff.total_lines_deleted
                 passed = total_changed <= (criterion.max_lines_changed or 999999)
-                secondary_results.append(SecondaryResult(
-                    label=criterion.label,
-                    passed=passed,
-                    output=f"Lines changed: {total_changed}, max: {criterion.max_lines_changed}",
-                ))
+                secondary_results.append(
+                    SecondaryResult(
+                        label=criterion.label,
+                        passed=passed,
+                        output=(
+                            f"Lines changed: {total_changed}, max: {criterion.max_lines_changed}"
+                        ),
+                    )
+                )
             elif criterion.command:
                 sec_result = await sandbox_manager.exec(
-                    sandbox, criterion.command, timeout=criterion.timeout_seconds,
+                    sandbox,
+                    criterion.command,
+                    timeout=criterion.timeout_seconds,
                 )
-                secondary_results.append(SecondaryResult(
-                    label=criterion.label,
-                    passed=sec_result.exit_code == 0,
-                    output=sec_result.stdout[:2000],
-                    exit_code=sec_result.exit_code,
-                ))
+                secondary_results.append(
+                    SecondaryResult(
+                        label=criterion.label,
+                        passed=sec_result.exit_code == 0,
+                        output=sec_result.stdout[:2000],
+                        exit_code=sec_result.exit_code,
+                    )
+                )
 
         return CorrectnessResult(
             primary_pass=primary_pass,
@@ -163,8 +178,11 @@ class Scorer:
         return 0.0
 
     def _score_quality(
-        self, task: TaskSpec, sandbox_manager: SandboxManager,
-        diff: FileDiff, correctness: CorrectnessResult,
+        self,
+        task: TaskSpec,
+        sandbox_manager: SandboxManager,
+        diff: FileDiff,
+        correctness: CorrectnessResult,
     ) -> QualityResult:
         """
         Score code quality from diff and secondary results.
@@ -259,10 +277,7 @@ class Scorer:
 
             elif etype in (EventType.COMMAND_EXEC, EventType.TEST_RUN):
                 cmd = event.data.get("command", "")
-                is_test = (
-                    etype == EventType.TEST_RUN
-                    or any(kw in cmd for kw in _TEST_KEYWORDS)
-                )
+                is_test = etype == EventType.TEST_RUN or any(kw in cmd for kw in _TEST_KEYWORDS)
                 if is_test:
                     test_run_count += 1
                     ran_tests_before_done = True

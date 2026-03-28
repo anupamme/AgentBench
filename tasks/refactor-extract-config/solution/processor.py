@@ -1,8 +1,8 @@
 """Data processor that combines database and API data."""
 
-from db import connect, query
 from api_client import fetch
 from config import BATCH_SIZE
+from db import connect, query
 
 
 def process(sql: str, endpoint: str) -> dict:

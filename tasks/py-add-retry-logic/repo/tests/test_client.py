@@ -1,5 +1,6 @@
-from unittest.mock import patch, MagicMock
 import urllib.error
+from unittest.mock import MagicMock, patch
+
 import pytest
 from client import fetch_data
 
@@ -29,8 +30,7 @@ def test_retries_on_failure():
         mock.__exit__ = MagicMock(return_value=False)
         return mock
 
-    with patch("urllib.request.urlopen", side_effect=fake_urlopen), \
-         patch("time.sleep"):
+    with patch("urllib.request.urlopen", side_effect=fake_urlopen), patch("time.sleep"):
         result = fetch_data("http://example.com")
     assert result == "ok"
     assert call_count == 3
@@ -38,7 +38,9 @@ def test_retries_on_failure():
 
 def test_raises_after_max_retries():
     """Should raise after 3 failed attempts."""
-    with patch("urllib.request.urlopen", side_effect=urllib.error.URLError("down")), \
-         patch("time.sleep"):
+    with (
+        patch("urllib.request.urlopen", side_effect=urllib.error.URLError("down")),
+        patch("time.sleep"),
+    ):
         with pytest.raises(urllib.error.URLError):
             fetch_data("http://example.com")

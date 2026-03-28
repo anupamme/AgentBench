@@ -1,6 +1,6 @@
 import time
-import urllib.request
 import urllib.error
+import urllib.request
 
 MAX_RETRIES = 3
 

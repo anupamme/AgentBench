@@ -7,6 +7,7 @@ Provides multiple views of a trace:
 - File tree: all files the agent touched, organized as a directory tree
 - Token breakdown: per-turn token usage as a horizontal bar chart
 """
+
 from __future__ import annotations
 
 import json
@@ -82,9 +83,7 @@ class TraceViewer:
             self.console.print(Panel(lines, title=f"Turn {turn_num}", expand=False))
 
         # Summary
-        total_tokens = sum(
-            e.token_usage.total_tokens for e in events if e.token_usage
-        )
+        total_tokens = sum(e.token_usage.total_tokens for e in events if e.token_usage)
         duration = (events[-1].timestamp - base_ts).total_seconds()
         self.console.print(
             f"Total: {len(turns)} turns, {len(events)} events, "

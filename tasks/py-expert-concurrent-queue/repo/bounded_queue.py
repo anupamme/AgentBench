@@ -29,9 +29,7 @@ class BoundedQueue:
 
     def get(self, timeout: float = None) -> Any:
         with self._not_empty:
-            if not self._not_empty.wait_for(
-                lambda: len(self._queue) > 0, timeout=timeout
-            ):
+            if not self._not_empty.wait_for(lambda: len(self._queue) > 0, timeout=timeout):
                 raise QueueEmpty("Queue is empty")
             item = self._queue.pop(0)
             self._not_full.notify()

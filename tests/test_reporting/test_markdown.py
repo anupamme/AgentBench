@@ -1,4 +1,5 @@
 """Tests for MarkdownReporter using Jinja2 templates."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
@@ -27,11 +28,7 @@ def _make_suite_summary(**overrides: Any) -> dict[str, Any]:
             }
         },
         "by_difficulty": {
-            "easy": {
-                "by_agent": {
-                    "claude-api": {"total": 2, "passed": 2, "pass_rate": 1.0}
-                }
-            }
+            "easy": {"by_agent": {"claude-api": {"total": 2, "passed": 2, "pass_rate": 1.0}}}
         },
         "by_failure_class": {"context_miss": 1, "timeout_or_loop": 1},
         "all_runs": [
@@ -79,6 +76,7 @@ def _make_comparison() -> dict[str, Any]:
 
 # --- Suite report ---
 
+
 def test_suite_report_sections() -> None:
     reporter = MarkdownReporter()
     md = reporter.generate_suite_report(_make_suite_summary())
@@ -108,11 +106,14 @@ def test_suite_report_valid_markdown_tables() -> None:
                 summary_table_lines.append(line)
     assert len(summary_table_lines) > 1, "Summary table should have header + separator + data rows"
     # Within the summary table, all pipe-delimited lines should have consistent column count
-    col_counts = [line.count("|") for line in summary_table_lines if not line.strip().startswith("|---")]
+    col_counts = [
+        line.count("|") for line in summary_table_lines if not line.strip().startswith("|---")
+    ]
     assert len(set(col_counts)) == 1, f"Inconsistent column counts in Summary table: {col_counts}"
 
 
 # --- Comparison report ---
+
 
 def test_comparison_report_regressions() -> None:
     reporter = MarkdownReporter()
@@ -128,6 +129,7 @@ def test_comparison_report_regressions() -> None:
 
 # --- save ---
 
+
 def test_save_writes_file(tmp_path: Path) -> None:
     reporter = MarkdownReporter()
     content = "# Test\n\nHello world."
@@ -138,6 +140,7 @@ def test_save_writes_file(tmp_path: Path) -> None:
 
 
 # --- Edge cases ---
+
 
 def test_empty_experiment_no_crash() -> None:
     reporter = MarkdownReporter()
@@ -160,6 +163,7 @@ def test_empty_experiment_no_crash() -> None:
 
 
 # --- Custom filters ---
+
 
 def test_custom_filters() -> None:
     reporter = MarkdownReporter()

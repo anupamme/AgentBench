@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 import typer
 from rich.console import Console
 
@@ -22,7 +24,11 @@ def _version_callback(value: bool) -> None:
 @app.callback()
 def main(
     version: bool | None = typer.Option(
-        None, "--version", "-V", callback=_version_callback, is_eager=True,
+        None,
+        "--version",
+        "-V",
+        callback=_version_callback,
+        is_eager=True,
         help="Show version and exit.",
     ),
 ) -> None:
@@ -89,7 +95,7 @@ def run(
         raise typer.Exit(code=1)
 
     # Create adapter
-    extra: dict = {}
+    extra: dict[str, Any] = {}
     if bedrock:
         extra["use_bedrock"] = True
     if aws_region:
@@ -163,7 +169,7 @@ def experiment(
     console.print(f"  Suite: {exp.suite} ({len(tasks)} tasks)")
     console.print(f"  Agents: {len(exp.agents)}, runs_per_task: {exp.runs_per_task}")
 
-    all_results: dict[str, list] = {}
+    all_results: dict[str, list[Any]] = {}
 
     for agent_cfg in exp.agents:
         agent_results = []
@@ -287,6 +293,7 @@ def trace(
 
         if events:
             from agentbench.trace.events import EventType
+
             filter_types = {EventType(e.strip()) for e in events.split(",")}
             filtered = [ev for ev in loaded_trace.events if ev.event_type in filter_types]
             for ev in filtered:
@@ -321,7 +328,9 @@ def validate(
 @app.command()
 def scaffold(
     id: str = typer.Option(..., help="Task ID (kebab-case, e.g. fix-null-pointer-bug)"),
-    task_type: str = typer.Option(..., "--type", help="Task type: bug_fix, feature_add, refactor, etc."),  # noqa: E501
+    task_type: str = typer.Option(
+        ..., "--type", help="Task type: bug_fix, feature_add, refactor, etc."
+    ),  # noqa: E501
     difficulty: str = typer.Option("medium", help="Difficulty: easy, medium, hard, expert"),
     language: str = typer.Option("python", help="Primary language: python or javascript"),
 ) -> None:

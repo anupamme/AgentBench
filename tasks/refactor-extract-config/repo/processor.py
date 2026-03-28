@@ -1,7 +1,7 @@
 """Data processor that combines database and API data."""
 
-from db import connect, query
 from api_client import fetch
+from db import connect, query
 
 BATCH_SIZE = 100
 

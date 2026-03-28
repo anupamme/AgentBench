@@ -3,7 +3,7 @@ def batch_process(items: list, batch_size: int) -> list:
     results = []
     i = 0
     while i < len(items):
-        batch = items[i:i + batch_size]
+        batch = items[i : i + batch_size]
         i += batch_size
         if i >= len(items) and len(batch) == batch_size:
             # BUG: exits before appending the final batch when it is exactly batch_size

@@ -1,4 +1,5 @@
 import json
+
 import pytest
 from config_loader import load_config
 from validator import validate_config
@@ -20,7 +21,9 @@ def test_load_and_validate(config_file):
 
 def test_timeout_is_int(config_file):
     config = load_config(config_file)
-    assert isinstance(config["timeout"], int), f"timeout should be int, got {type(config['timeout'])}"
+    assert isinstance(
+        config["timeout"], int
+    ), f"timeout should be int, got {type(config['timeout'])}"
 
 
 def test_negative_timeout_detected(tmp_path):
