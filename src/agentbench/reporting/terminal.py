@@ -170,7 +170,9 @@ class TerminalReporter:
                     passed = bool(agent_run.get("primary_pass", agent_run.get("passed", False)))
                     tokens = int(agent_run.get("total_tokens", 0))
                     tokens_k = tokens // 1000
-                    failure_class = agent_run.get("failure_class") or agent_run.get("failure_category", "")
+                    failure_class = (
+                        agent_run.get("failure_class") or agent_run.get("failure_category", "")
+                    )
                     # Abbreviate long failure classes
                     if failure_class and len(str(failure_class)) > 12:
                         failure_class = str(failure_class)[:10] + ".."
