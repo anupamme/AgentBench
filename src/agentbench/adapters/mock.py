@@ -26,7 +26,9 @@ if TYPE_CHECKING:
 class MockAdapter(AgentAdapter):
     """Adapter that replays a scripted sequence of actions."""
 
-    def __init__(self, script: list[dict[str, Any]] | None = None, config: AgentConfig | None = None):
+    def __init__(
+        self, script: list[dict[str, Any]] | None = None, config: AgentConfig | None = None
+    ):
         """
         Args:
             script: List of actions to execute in order.

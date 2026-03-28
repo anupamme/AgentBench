@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 import typer
 from rich.console import Console
 
@@ -23,7 +21,7 @@ def _version_callback(value: bool) -> None:
 
 @app.callback()
 def main(
-    version: Optional[bool] = typer.Option(  # noqa: UP007
+    version: bool | None = typer.Option(
         None, "--version", "-V", callback=_version_callback, is_eager=True,
         help="Show version and exit.",
     ),
@@ -44,7 +42,7 @@ def run(
 ) -> None:
     """Run evaluation tasks against an agent."""
     import asyncio
-    from pathlib import Path as P
+    from pathlib import Path
 
     from agentbench.adapters.base import AgentConfig
     from agentbench.adapters.registry import get_adapter
@@ -55,7 +53,7 @@ def run(
 
     # Load tasks
     if task:
-        task_path = P(task)
+        task_path = Path(task)
         if task_path.suffix in (".yaml", ".yml"):
             try:
                 tasks = [loader.load_task(task_path)]
@@ -65,7 +63,7 @@ def run(
                     console.print(f"  [red]• {err}[/red]")
                 raise typer.Exit(code=1) from None
         else:
-            task_path = P("tasks") / task / "task.yaml"
+            task_path = Path("tasks") / task / "task.yaml"
             try:
                 tasks = [loader.load_task(task_path)]
             except TaskLoadError as e:
@@ -74,11 +72,11 @@ def run(
                     console.print(f"  [red]• {err}[/red]")
                 raise typer.Exit(code=1) from None
     elif suite:
-        suite_path = P(suite)
+        suite_path = Path(suite)
         if not suite_path.exists():
-            suite_path = P("tasks/suites") / f"{suite}.yaml"
+            suite_path = Path("tasks/suites") / f"{suite}.yaml"
         if not suite_path.exists():
-            suite_path = P("tasks/.suites") / f"{suite}.yaml"
+            suite_path = Path("tasks/.suites") / f"{suite}.yaml"
         try:
             tasks = loader.load_suite(suite_path)
         except TaskLoadError as e:
@@ -104,7 +102,7 @@ def run(
         raise typer.Exit(code=1) from None
 
     # Run
-    orchestrator = Orchestrator(output_dir=P(output))
+    orchestrator = Orchestrator(output_dir=Path(output))
     results = asyncio.run(orchestrator.run_suite(tasks, adapter_instance, parallelism))
 
     # Print summary
@@ -128,7 +126,7 @@ def experiment(
 ) -> None:
     """Run a multi-agent comparison experiment."""
     import asyncio
-    from pathlib import Path as P
+    from pathlib import Path
 
     from agentbench.adapters.base import AgentConfig
     from agentbench.adapters.registry import get_adapter
@@ -136,7 +134,7 @@ def experiment(
     from agentbench.core.orchestrator import Orchestrator
     from agentbench.core.task_loader import TaskLoader, TaskLoadError
 
-    config_path = P(config)
+    config_path = Path(config)
     if not config_path.exists():
         console.print(f"[red]Config file not found: {config_path}[/red]")
         raise typer.Exit(code=1)
@@ -148,11 +146,11 @@ def experiment(
         raise typer.Exit(code=1) from None
 
     loader = TaskLoader()
-    suite_path = P(exp.suite)
+    suite_path = Path(exp.suite)
     if not suite_path.exists():
-        suite_path = P("tasks/suites") / f"{exp.suite}.yaml"
+        suite_path = Path("tasks/suites") / f"{exp.suite}.yaml"
     if not suite_path.exists():
-        suite_path = P("tasks/.suites") / f"{exp.suite}.yaml"
+        suite_path = Path("tasks/.suites") / f"{exp.suite}.yaml"
     try:
         tasks = loader.load_suite(suite_path)
     except TaskLoadError as e:
@@ -181,12 +179,13 @@ def experiment(
             console.print(f"[red]Failed to load adapter '{agent_cfg.adapter}': {e}[/red]")
             continue
 
-        orchestrator = Orchestrator(output_dir=P(output) / exp.name)
+        orchestrator = Orchestrator(output_dir=Path(output) / exp.name)
 
         for run_idx in range(exp.runs_per_task):
             if exp.runs_per_task > 1:
                 console.print(
-                    f"\n[cyan]Agent: {agent_cfg.name} — run {run_idx + 1}/{exp.runs_per_task}[/cyan]"
+                    f"\n[cyan]Agent: {agent_cfg.name} — run {run_idx + 1}"
+                    f"/{exp.runs_per_task}[/cyan]"
                 )
             else:
                 console.print(f"\n[cyan]Agent: {agent_cfg.name}[/cyan]")
@@ -212,12 +211,12 @@ def report(
     format: str = typer.Option("table", help="Output format: table, detail, markdown, failure"),
 ) -> None:
     """Generate a report from results."""
-    from pathlib import Path as P
+    from pathlib import Path
 
     from agentbench.reporting.data import ExperimentData
     from agentbench.reporting.reporter import Reporter
 
-    data = ExperimentData.load(P(results_dir))
+    data = ExperimentData.load(Path(results_dir))
     if not data.runs:
         console.print(f"[yellow]No runs found in {results_dir}[/yellow]")
         raise typer.Exit(code=1)
@@ -233,7 +232,9 @@ def report(
     elif format == "failure":
         reporter.failure_report(data)
     else:
-        console.print(f"[red]Unknown format '{format}'. Use: table, detail, markdown, failure[/red]")
+        console.print(
+            f"[red]Unknown format '{format}'. Use: table, detail, markdown, failure[/red]"
+        )
         raise typer.Exit(code=1)
 
 
@@ -243,13 +244,13 @@ def compare(
     candidate: str = typer.Argument(..., help="Candidate results directory"),
 ) -> None:
     """Compare two result sets with statistical significance testing."""
-    from pathlib import Path as P
+    from pathlib import Path
 
     from agentbench.reporting.comparison import ComparisonEngine
     from agentbench.reporting.data import ExperimentData
 
-    baseline_data = ExperimentData.load(P(baseline))
-    candidate_data = ExperimentData.load(P(candidate))
+    baseline_data = ExperimentData.load(Path(baseline))
+    candidate_data = ExperimentData.load(Path(candidate))
     engine = ComparisonEngine()
     result = engine.compare(baseline_data, candidate_data)
     engine.print_comparison(result, console)
@@ -262,11 +263,11 @@ def trace(
     timeline: bool = typer.Option(False, help="Show chronological timeline"),
 ) -> None:
     """Inspect the trace of a specific run."""
-    from pathlib import Path as P
+    from pathlib import Path
 
     from agentbench.trace.collector import TraceCollector
 
-    trace_path = P(run_dir) / "trace.json"
+    trace_path = Path(run_dir) / "trace.json"
     if not trace_path.exists():
         console.print(f"[red]No trace.json found in {run_dir}[/red]")
         raise typer.Exit(code=1)
@@ -320,7 +321,7 @@ def validate(
 @app.command()
 def scaffold(
     id: str = typer.Option(..., help="Task ID (kebab-case, e.g. fix-null-pointer-bug)"),
-    task_type: str = typer.Option(..., "--type", help="Task type: bug_fix, feature_add, refactor, etc."),
+    task_type: str = typer.Option(..., "--type", help="Task type: bug_fix, feature_add, refactor, etc."),  # noqa: E501
     difficulty: str = typer.Option("medium", help="Difficulty: easy, medium, hard, expert"),
     language: str = typer.Option("python", help="Primary language: python or javascript"),
 ) -> None:

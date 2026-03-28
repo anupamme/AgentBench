@@ -4,15 +4,13 @@ from __future__ import annotations
 import json
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import AsyncIterator
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, patch
-
-import pytest
 
 from agentbench.adapters.base import AgentConfig, AgentResult
 from agentbench.classification.taxonomy import FailureCategory, FailureClassification
 from agentbench.core.models import TaskSpec
-from agentbench.core.orchestrator import Orchestrator, RunResult
+from agentbench.core.orchestrator import Orchestrator
 from agentbench.sandbox.manager import FileDiff, Sandbox, SandboxStatus
 from agentbench.scoring.models import (
     CorrectnessResult,
@@ -23,6 +21,8 @@ from agentbench.scoring.models import (
 )
 from agentbench.trace.collector import TraceCollector
 
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 # ---------------------------------------------------------------------------
 # Helpers / shared fixtures

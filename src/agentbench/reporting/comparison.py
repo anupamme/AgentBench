@@ -5,8 +5,10 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
-from agentbench.reporting.data import ExperimentData, RunData
+if TYPE_CHECKING:
+    from agentbench.reporting.data import ExperimentData, RunData
 
 
 @dataclass
@@ -79,24 +81,26 @@ class ComparisonEngine:
         pass_rate_delta = candidate_pass_rate - baseline_pass_rate
 
         # McNemar contingency: b = baseline-only solves, c = candidate-only solves
-        b_only = sum(1 for bp, cp in zip(b_pass, c_pass) if bp and not cp)
-        c_only = sum(1 for bp, cp in zip(b_pass, c_pass) if not bp and cp)
+        b_only = sum(1 for bp, cp in zip(b_pass, c_pass, strict=False) if bp and not cp)
+        c_only = sum(1 for bp, cp in zip(b_pass, c_pass, strict=False) if not bp and cp)
 
         p_value = _mcnemar_p_value(b_only, c_only)
         is_significant = p_value < 0.05
 
         unique_baseline_solves = [
-            t for t, bp, cp in zip(common_tasks, b_pass, c_pass) if bp and not cp
+            t for t, bp, cp in zip(common_tasks, b_pass, c_pass, strict=False) if bp and not cp
         ]
         unique_candidate_solves = [
-            t for t, bp, cp in zip(common_tasks, b_pass, c_pass) if not bp and cp
+            t for t, bp, cp in zip(common_tasks, b_pass, c_pass, strict=False) if not bp and cp
         ]
 
         # Token efficiency ratio
         baseline_tokens = [baseline_by_task[t].total_tokens for t in common_tasks]
         candidate_tokens = [candidate_by_task[t].total_tokens for t in common_tasks]
         baseline_avg_tokens = sum(baseline_tokens) / len(baseline_tokens) if baseline_tokens else 0
-        candidate_avg_tokens = sum(candidate_tokens) / len(candidate_tokens) if candidate_tokens else 0
+        candidate_avg_tokens = (
+            sum(candidate_tokens) / len(candidate_tokens) if candidate_tokens else 0
+        )
         token_efficiency_ratio = (
             candidate_avg_tokens / baseline_avg_tokens if baseline_avg_tokens > 0 else 1.0
         )
@@ -124,7 +128,12 @@ class ComparisonEngine:
 
         sig_marker = " *" if result.is_significant else ""
         delta_sign = "+" if result.pass_rate_delta >= 0 else ""
-        delta_style = "green" if result.pass_rate_delta > 0 else ("red" if result.pass_rate_delta < 0 else "")
+        if result.pass_rate_delta > 0:
+            delta_style = "green"
+        elif result.pass_rate_delta < 0:
+            delta_style = "red"
+        else:
+            delta_style = ""
 
         # Summary table
         table = Table(title="Pass Rate Comparison")
@@ -132,7 +141,13 @@ class ComparisonEngine:
         table.add_column("Pass Rate", justify="right")
 
         table.add_row(result.baseline_agent, f"{result.baseline_pass_rate:.1%}")
-        delta_str = f"[{delta_style}]{delta_sign}{result.pass_rate_delta:.1%}[/{delta_style}]{sig_marker}" if delta_style else f"{delta_sign}{result.pass_rate_delta:.1%}{sig_marker}"
+        if delta_style:
+            delta_str = (
+                f"[{delta_style}]{delta_sign}{result.pass_rate_delta:.1%}"
+                f"[/{delta_style}]{sig_marker}"
+            )
+        else:
+            delta_str = f"{delta_sign}{result.pass_rate_delta:.1%}{sig_marker}"
         table.add_row(result.candidate_agent, f"{result.candidate_pass_rate:.1%}  Δ {delta_str}")
         con.print(table)
 
@@ -142,21 +157,29 @@ class ComparisonEngine:
 
         # Unique solves
         if result.unique_baseline_solves:
-            con.print(f"\n  [cyan]Only {result.baseline_agent} solved:[/cyan] {', '.join(result.unique_baseline_solves)}")
+            solves = ", ".join(result.unique_baseline_solves)
+            con.print(f"\n  [cyan]Only {result.baseline_agent} solved:[/cyan] {solves}")
         if result.unique_candidate_solves:
-            con.print(f"  [cyan]Only {result.candidate_agent} solved:[/cyan] {', '.join(result.unique_candidate_solves)}")
+            solves = ", ".join(result.unique_candidate_solves)
+            con.print(f"  [cyan]Only {result.candidate_agent} solved:[/cyan] {solves}")
 
         # Efficiency
         ratio = result.token_efficiency_ratio
         ratio_style = "green" if ratio < 1.0 else ("red" if ratio > 1.0 else "")
-        ratio_str = f"[{ratio_style}]{ratio:.2f}x[/{ratio_style}]" if ratio_style else f"{ratio:.2f}x"
+        ratio_str = f"[{ratio_style}]{ratio:.2f}x[/{ratio_style}]" if ratio_style else f"{ratio:.2f}x"  # noqa: E501
         con.print(f"\n  Token efficiency ratio (candidate/baseline): {ratio_str}")
 
         # Recommendation
         con.print()
         if result.is_significant and result.pass_rate_delta > 0:
-            con.print(Panel(f"[green]Recommendation: {result.candidate_agent} is significantly better.[/green]"))
+            con.print(Panel(
+                f"[green]Recommendation: {result.candidate_agent} is significantly better.[/green]"
+            ))
         elif result.is_significant and result.pass_rate_delta < 0:
-            con.print(Panel(f"[red]Recommendation: {result.baseline_agent} is significantly better.[/red]"))
+            con.print(Panel(
+                f"[red]Recommendation: {result.baseline_agent} is significantly better.[/red]"
+            ))
         else:
-            con.print(Panel("[yellow]Recommendation: No statistically significant difference detected.[/yellow]"))
+            con.print(Panel(
+                "[yellow]Recommendation: No statistically significant difference detected.[/yellow]"
+            ))

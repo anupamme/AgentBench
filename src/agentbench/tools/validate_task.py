@@ -16,10 +16,13 @@ from __future__ import annotations
 import base64
 import time
 from dataclasses import dataclass, field
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from agentbench.core.task_loader import TaskLoader
 from agentbench.sandbox.manager import SandboxManager
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 @dataclass
@@ -66,7 +69,9 @@ class TaskValidator:
         t0 = time.monotonic()
         try:
             task = self._loader.load_task(task_yaml)
-            results.append(CheckResult("schema_valid", True, duration_seconds=time.monotonic() - t0))
+            results.append(  # noqa: E501
+                CheckResult("schema_valid", True, duration_seconds=time.monotonic() - t0)
+            )
         except Exception as e:
             results.append(CheckResult("schema_valid", False, str(e), time.monotonic() - t0))
             return ValidationResult(task_id=task_id, passed=False, checks=results)
@@ -81,7 +86,9 @@ class TaskValidator:
 
         # ── Check 3: solution/ exists and non-empty ───────────────────────────
         solution_dir = task_dir / "solution"
-        solution_files = [f for f in solution_dir.rglob("*") if f.is_file() and f.name != ".gitkeep"]
+        solution_files = [
+            f for f in solution_dir.rglob("*") if f.is_file() and f.name != ".gitkeep"
+        ]
         if solution_dir.is_dir() and solution_files:
             results.append(CheckResult("solution_exists", True))
         else:
@@ -97,7 +104,9 @@ class TaskValidator:
             t0 = time.monotonic()
             async with self._sandbox_manager.session(task) as sandbox:
                 # Check 4: Setup succeeded (sandbox creation runs setup_commands)
-                results.append(CheckResult("setup_succeeds", True, duration_seconds=time.monotonic() - t0))
+                results.append(
+                    CheckResult("setup_succeeds", True, duration_seconds=time.monotonic() - t0)
+                )
 
                 # Check 5: Tests fail initially ─────────────────────────────
                 t0 = time.monotonic()
@@ -145,7 +154,9 @@ class TaskValidator:
                 )
                 duration = time.monotonic() - t0
                 if eval_result.exit_code == 0:
-                    results.append(CheckResult("tests_pass_with_solution", True, duration_seconds=duration))
+                    results.append(
+                        CheckResult("tests_pass_with_solution", True, duration_seconds=duration)
+                    )
                 else:
                     output_preview = (eval_result.stdout + eval_result.stderr)[:500]
                     results.append(CheckResult(

@@ -1,5 +1,6 @@
 """Score dataclasses for the multi-dimensional scoring pipeline."""
 from __future__ import annotations
+
 from dataclasses import dataclass, field
 
 
@@ -50,17 +51,18 @@ class EfficiencyResult:
     commands_executed: int = 0
     # Derived ratios
     tokens_per_turn: float = 0.0
-    relevant_file_read_ratio: float = 0.0        # files_read that were in files_to_highlight / total files_read
+    # files_read that were in files_to_highlight / total files_read
+    relevant_file_read_ratio: float = 0.0
 
 
 @dataclass
 class ProcessResult:
     """Process quality — did the agent follow good engineering practices?"""
-    read_before_edit: bool = False               # Did the agent read relevant files before editing them?
-    ran_tests_before_done: bool = False           # Did the agent run tests at least once before finishing?
-    iterated_on_failure: bool = False             # If tests failed, did the agent try again?
-    explored_codebase: bool = False               # Did the agent read more than just the highlighted files?
-    test_run_count: int = 0                      # How many times did the agent run tests?
+    read_before_edit: bool = False        # Did the agent read relevant files before editing them?
+    ran_tests_before_done: bool = False   # Did the agent run tests at least once before finishing?
+    iterated_on_failure: bool = False     # If tests failed, did the agent try again?
+    explored_codebase: bool = False       # Did the agent read more than just the highlighted files?
+    test_run_count: int = 0               # How many times did the agent run tests?
 
 
 @dataclass

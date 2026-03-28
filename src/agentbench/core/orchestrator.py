@@ -21,16 +21,15 @@ from typing import TYPE_CHECKING
 
 from agentbench.adapters.base import AgentAdapter, AgentResult
 from agentbench.classification.classifier import FailureClassifier
-from agentbench.classification.taxonomy import FailureClassification
-from agentbench.core.models import TaskSpec
 from agentbench.core.results import RunStorage
 from agentbench.sandbox.manager import SandboxManager
-from agentbench.scoring.models import TaskScore
 from agentbench.scoring.scorer import Scorer
 from agentbench.trace.collector import TraceCollector
 
 if TYPE_CHECKING:
-    pass
+    from agentbench.classification.taxonomy import FailureClassification
+    from agentbench.core.models import TaskSpec
+    from agentbench.scoring.models import TaskScore
 
 
 @dataclass
@@ -154,7 +153,7 @@ class Orchestrator:
 
         Displays progress using rich.progress.Progress bar.
         """
-        from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
+        from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn
 
         results: list[RunResult] = []
 

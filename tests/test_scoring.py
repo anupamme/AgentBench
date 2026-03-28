@@ -2,8 +2,13 @@
 from __future__ import annotations
 
 import pytest
+
 from agentbench.scoring.models import (
-    TaskScore, CorrectnessResult, QualityResult, EfficiencyResult, ProcessResult, SecondaryResult,
+    CorrectnessResult,
+    EfficiencyResult,
+    ProcessResult,
+    QualityResult,
+    TaskScore,
 )
 from agentbench.scoring.scorer import Scorer
 
@@ -43,9 +48,9 @@ class TestParsePartialScore:
 class TestProcessScoring:
     def test_read_before_edit_detected(self):
         """When FILE_READ comes before FILE_WRITE, read_before_edit should be True."""
+        from agentbench.core.models import TaskSpec
         from agentbench.trace.collector import TraceCollector
         from agentbench.trace.events import EventType
-        from agentbench.core.models import TaskSpec
 
         trace = TraceCollector("run-1", "task-1", "test")
         trace.record(EventType.AGENT_START, {"prompt": "fix", "model": "test", "config": {}})
@@ -62,7 +67,9 @@ class TestProcessScoring:
                          "estimated_human_time_minutes": 5, "source": "test"},
             "setup": {"repo": "/tmp", "commit": "HEAD", "files_to_highlight": ["main.py"]},
             "prompt": "Fix the bug in main.py.",
-            "evaluation": {"primary": {"type": "test_suite", "command": "pytest", "pass_condition": "exit_code == 0"}},
+            "evaluation": {"primary": {
+                "type": "test_suite", "command": "pytest", "pass_condition": "exit_code == 0",
+            }},
         }
         task = TaskSpec.model_validate(task_raw)
         result = scorer._score_process(trace, task)
@@ -70,9 +77,9 @@ class TestProcessScoring:
 
     def test_no_read_before_edit(self):
         """When FILE_WRITE comes first, read_before_edit should be False."""
+        from agentbench.core.models import TaskSpec
         from agentbench.trace.collector import TraceCollector
         from agentbench.trace.events import EventType
-        from agentbench.core.models import TaskSpec
 
         trace = TraceCollector("run-1", "task-1", "test")
         trace.record(EventType.AGENT_START, {"prompt": "fix", "model": "test", "config": {}})
@@ -86,7 +93,9 @@ class TestProcessScoring:
                          "estimated_human_time_minutes": 5, "source": "test"},
             "setup": {"repo": "/tmp", "commit": "HEAD"},
             "prompt": "Fix the bug in main.py.",
-            "evaluation": {"primary": {"type": "test_suite", "command": "pytest", "pass_condition": "exit_code == 0"}},
+            "evaluation": {"primary": {
+                "type": "test_suite", "command": "pytest", "pass_condition": "exit_code == 0",
+            }},
         }
         task = TaskSpec.model_validate(task_raw)
         result = scorer._score_process(trace, task)

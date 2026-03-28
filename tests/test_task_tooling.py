@@ -2,14 +2,13 @@
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from agentbench.core.task_loader import TaskLoader
 from agentbench.tools.scaffold_task import scaffold_task
-from agentbench.tools.validate_task import CheckResult, TaskValidator, ValidationResult
-
+from agentbench.tools.validate_task import TaskValidator
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Scaffolding tests (no Docker required)
