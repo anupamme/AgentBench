@@ -1,0 +1,13 @@
+name: "example-comparison"
+suite: "quick-v1"
+runs_per_task: 3
+agents:
+  - name: "sonnet-4"
+    adapter: "anthropic-api"
+    model: "claude-sonnet-4-20250514"
+    temperature: 0
+  - name: "opus-4"
+    adapter: "anthropic-api"
+    model: "claude-opus-4-20250514"
+    temperature: 0
+parallelism: 2
