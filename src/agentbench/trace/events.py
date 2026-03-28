@@ -24,11 +24,16 @@ class EventType(StrEnum):
     # File operations
     FILE_READ = "file_read"                 # Agent read a file
     FILE_WRITE = "file_write"              # Agent created or modified a file
+    FILE_CREATE = "file_create"            # Agent created a new file
     FILE_DELETE = "file_delete"            # Agent deleted a file
 
     # Shell operations
     COMMAND_EXEC = "command_exec"           # Agent executed a shell command
     COMMAND_OUTPUT = "command_output"       # Output from a shell command
+
+    # Search/navigation operations
+    SEARCH = "search"                       # Agent searched for content
+    DIRECTORY_LIST = "directory_list"       # Agent listed directory contents
 
     # Test operations
     TEST_RUN = "test_run"                  # Agent ran a test suite
@@ -64,6 +69,7 @@ class TraceEvent:
     duration_ms: int = 0
     token_usage: TokenUsage | None = None
     sequence_number: int = 0  # auto-assigned by TraceCollector
+    turn_number: int = 0      # auto-assigned by TraceCollector.new_turn()
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize to a JSON-compatible dict."""
@@ -73,6 +79,7 @@ class TraceEvent:
             "data": self.data,
             "duration_ms": self.duration_ms,
             "sequence_number": self.sequence_number,
+            "turn_number": self.turn_number,
         }
         if self.token_usage:
             result["token_usage"] = {
@@ -105,4 +112,5 @@ class TraceEvent:
             duration_ms=data.get("duration_ms", 0),
             token_usage=token_usage,
             sequence_number=data.get("sequence_number", 0),
+            turn_number=data.get("turn_number", 0),
         )
