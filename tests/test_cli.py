@@ -26,6 +26,6 @@ def test_validate_missing_file():
     assert "fake.yaml" in result.stdout.lower()
 
 
-def test_report_not_implemented():
+def test_report_empty_dir():
     result = runner.invoke(app, ["report", "fake_dir/"])
-    assert "not yet implemented" in result.stdout.lower()
+    assert result.exit_code != 0

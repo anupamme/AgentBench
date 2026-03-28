@@ -189,10 +189,32 @@ def experiment(
 @app.command()
 def report(
     results_dir: str = typer.Argument(..., help="Path to results directory"),
-    format: str = typer.Option("table", help="Output format: table, markdown, json"),
+    format: str = typer.Option("table", help="Output format: table, detail, markdown, failure"),
 ) -> None:
     """Generate a report from results."""
-    console.print("[yellow]report command not yet implemented[/yellow]")
+    from pathlib import Path as P
+
+    from agentbench.reporting.data import ExperimentData
+    from agentbench.reporting.reporter import Reporter
+
+    data = ExperimentData.load(P(results_dir))
+    if not data.runs:
+        console.print(f"[yellow]No runs found in {results_dir}[/yellow]")
+        raise typer.Exit(code=1)
+
+    reporter = Reporter(console)
+
+    if format == "table":
+        reporter.summary_table(data)
+    elif format == "detail":
+        reporter.detail_table(data)
+    elif format == "markdown":
+        console.print(reporter.markdown_report(data))
+    elif format == "failure":
+        reporter.failure_report(data)
+    else:
+        console.print(f"[red]Unknown format '{format}'. Use: table, detail, markdown, failure[/red]")
+        raise typer.Exit(code=1)
 
 
 @app.command()
@@ -201,7 +223,16 @@ def compare(
     candidate: str = typer.Argument(..., help="Candidate results directory"),
 ) -> None:
     """Compare two result sets with statistical significance testing."""
-    console.print("[yellow]compare command not yet implemented[/yellow]")
+    from pathlib import Path as P
+
+    from agentbench.reporting.comparison import ComparisonEngine
+    from agentbench.reporting.data import ExperimentData
+
+    baseline_data = ExperimentData.load(P(baseline))
+    candidate_data = ExperimentData.load(P(candidate))
+    engine = ComparisonEngine()
+    result = engine.compare(baseline_data, candidate_data)
+    engine.print_comparison(result, console)
 
 
 @app.command()

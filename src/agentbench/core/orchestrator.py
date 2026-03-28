@@ -109,6 +109,7 @@ class Orchestrator:
                 storage.save_result(agent_result)
                 storage.save_diff(diff)
                 storage.save_metadata(task, adapter.config)
+                storage.save_score(score, failure)
 
                 return RunResult(
                     task_id=task.id,
