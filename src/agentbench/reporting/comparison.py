@@ -65,8 +65,8 @@ class ComparisonEngine:
                     result[run.task_id] = run
             return result
 
-        baseline_by_task = best_run_by_task(baseline.runs)
-        candidate_by_task = best_run_by_task(candidate.runs)
+        baseline_by_task = best_run_by_task(baseline.by_agent().get(baseline_agent, []))
+        candidate_by_task = best_run_by_task(candidate.by_agent().get(candidate_agent, []))
 
         # Only compare tasks present in both
         common_tasks = sorted(set(baseline_by_task) & set(candidate_by_task))
