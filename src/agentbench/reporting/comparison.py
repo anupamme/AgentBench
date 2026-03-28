@@ -1,18 +1,28 @@
 """
 Comparison Engine — compares two result sets with statistical significance.
+
+Provides:
+- SimpleComparisonResult / ComparisonEngine: pairwise agent comparison (existing)
+- AgentDelta, TaskFlip, ComparisonResult, ExperimentComparator: multi-agent
+  experiment comparison with McNemar's test and bootstrap CIs (new)
 """
 from __future__ import annotations
 
 import math
+import random
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from agentbench.reporting.data import ExperimentData, RunData
 
 
+# ---------------------------------------------------------------------------
+# Legacy pairwise comparison (preserved; renamed to SimpleComparisonResult)
+# ---------------------------------------------------------------------------
+
 @dataclass
-class ComparisonResult:
+class SimpleComparisonResult:
     baseline_agent: str
     candidate_agent: str
     baseline_pass_rate: float
@@ -43,7 +53,7 @@ class ComparisonEngine:
 
     def compare(
         self, baseline: ExperimentData, candidate: ExperimentData
-    ) -> ComparisonResult:
+    ) -> SimpleComparisonResult:
         """
         Compare baseline and candidate results.
 
@@ -105,7 +115,7 @@ class ComparisonEngine:
             candidate_avg_tokens / baseline_avg_tokens if baseline_avg_tokens > 0 else 1.0
         )
 
-        return ComparisonResult(
+        return SimpleComparisonResult(
             baseline_agent=baseline_agent,
             candidate_agent=candidate_agent,
             baseline_pass_rate=baseline_pass_rate,
@@ -118,7 +128,7 @@ class ComparisonEngine:
             token_efficiency_ratio=token_efficiency_ratio,
         )
 
-    def print_comparison(self, result: ComparisonResult, console=None) -> None:  # type: ignore[no-untyped-def]
+    def print_comparison(self, result: SimpleComparisonResult, console=None) -> None:  # type: ignore[no-untyped-def]
         """Print a formatted comparison report."""
         from rich.console import Console
         from rich.panel import Panel
@@ -183,3 +193,302 @@ class ComparisonEngine:
             con.print(Panel(
                 "[yellow]Recommendation: No statistically significant difference detected.[/yellow]"
             ))
+
+
+# ---------------------------------------------------------------------------
+# New multi-agent experiment comparator
+# ---------------------------------------------------------------------------
+
+@dataclass
+class AgentDelta:
+    """Pass rate delta for one agent across two experiments."""
+    agent_name: str
+    a_pass_rate: float
+    b_pass_rate: float
+    delta: float           # b_pass_rate - a_pass_rate (positive = improvement)
+    a_pass_b_fail: int     # Regressions
+    a_fail_b_pass: int     # Improvements
+    p_value: float
+    significant: bool      # p_value < 0.05
+
+
+@dataclass
+class TaskFlip:
+    """A task that changed outcome between experiments."""
+    task_id: str
+    agent_name: str
+    direction: str         # "pass_to_fail" or "fail_to_pass"
+    failure_class: str     # failure_class in the failing experiment
+
+
+@dataclass
+class ComparisonResult:
+    """Complete result of comparing two experiments."""
+    exp_a_id: str
+    exp_b_id: str
+    exp_a_name: str
+    exp_b_name: str
+
+    agent_deltas: list[AgentDelta]
+    flipped_pass_to_fail: list[TaskFlip]    # Regressions
+    flipped_fail_to_pass: list[TaskFlip]    # Improvements
+    failure_shifts: dict[str, dict[str, Any]]
+    # {"context_miss": {"a_count": 15, "b_count": 10, "delta": -5}, ...}
+    unique_a: list[str]    # Task IDs only solved in exp_a
+    unique_b: list[str]    # Task IDs only solved in exp_b
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize to JSON-compatible dict."""
+        return {
+            "exp_a_id": self.exp_a_id,
+            "exp_b_id": self.exp_b_id,
+            "exp_a_name": self.exp_a_name,
+            "exp_b_name": self.exp_b_name,
+            "agent_deltas": [
+                {
+                    "agent_name": d.agent_name,
+                    "a_pass_rate": d.a_pass_rate,
+                    "b_pass_rate": d.b_pass_rate,
+                    "delta": d.delta,
+                    "a_pass_b_fail": d.a_pass_b_fail,
+                    "a_fail_b_pass": d.a_fail_b_pass,
+                    "p_value": d.p_value,
+                    "significant": d.significant,
+                }
+                for d in self.agent_deltas
+            ],
+            "flipped_pass_to_fail": [
+                {
+                    "task_id": f.task_id,
+                    "agent_name": f.agent_name,
+                    "direction": f.direction,
+                    "failure_class": f.failure_class,
+                }
+                for f in self.flipped_pass_to_fail
+            ],
+            "flipped_fail_to_pass": [
+                {
+                    "task_id": f.task_id,
+                    "agent_name": f.agent_name,
+                    "direction": f.direction,
+                    "failure_class": f.failure_class,
+                }
+                for f in self.flipped_fail_to_pass
+            ],
+            "failure_shifts": self.failure_shifts,
+            "unique_a": self.unique_a,
+            "unique_b": self.unique_b,
+        }
+
+
+class ExperimentComparator:
+    """Compares two experiment runs with statistical testing."""
+
+    def compare(self, exp_a_id: str, exp_b_id: str, store: Any) -> ComparisonResult:
+        """Perform full comparison between two experiments.
+
+        store must implement: query_runs(experiment_id, limit) -> list[RunData-like]
+        """
+        a_runs: list[Any] = store.query_runs(experiment_id=exp_a_id, limit=10000)
+        b_runs: list[Any] = store.query_runs(experiment_id=exp_b_id, limit=10000)
+
+        # Group by (task_id, agent_name) -> list of runs
+        def group_runs(runs: list[Any]) -> dict[tuple[str, str], list[Any]]:
+            groups: dict[tuple[str, str], list[Any]] = {}
+            for run in runs:
+                key = (run.task_id, run.agent_name)
+                groups.setdefault(key, []).append(run)
+            return groups
+
+        a_groups = group_runs(a_runs)
+        b_groups = group_runs(b_runs)
+
+        # Majority vote: a task config is "passed" if >50% of runs pass
+        def majority_pass(runs: list[Any]) -> bool:
+            if not runs:
+                return False
+            passes = sum(1 for r in runs if r.passed)
+            return passes > len(runs) / 2
+
+        def failure_class_for(runs: list[Any]) -> str:
+            for run in runs:
+                fc = getattr(run, "failure_category", None) or getattr(run, "failure_class", None)
+                if fc:
+                    return str(fc)
+            return "unknown"
+
+        # Collect all agents
+        all_agents = sorted(
+            {key[1] for key in a_groups} | {key[1] for key in b_groups}
+        )
+
+        agent_deltas: list[AgentDelta] = []
+        flipped_pass_to_fail: list[TaskFlip] = []
+        flipped_fail_to_pass: list[TaskFlip] = []
+
+        for agent in all_agents:
+            # Tasks present in both experiments for this agent
+            a_tasks = {t for (t, a) in a_groups if a == agent}
+            b_tasks = {t for (t, a) in b_groups if a == agent}
+            common = sorted(a_tasks & b_tasks)
+
+            a_pass_map = {t: majority_pass(a_groups[(t, agent)]) for t in a_tasks}
+            b_pass_map = {t: majority_pass(b_groups[(t, agent)]) for t in b_tasks}
+
+            if not common and not a_tasks and not b_tasks:
+                continue
+
+            a_total = len(a_tasks)
+            b_total = len(b_tasks)
+            a_pass_count = sum(1 for t in a_tasks if a_pass_map[t])
+            b_pass_count = sum(1 for t in b_tasks if b_pass_map[t])
+
+            a_pass_rate = a_pass_count / a_total if a_total else 0.0
+            b_pass_rate = b_pass_count / b_total if b_total else 0.0
+            delta = b_pass_rate - a_pass_rate
+
+            # Paired disagreements on common tasks
+            a_pass_b_fail = sum(
+                1 for t in common if a_pass_map[t] and not b_pass_map[t]
+            )
+            a_fail_b_pass = sum(
+                1 for t in common if not a_pass_map[t] and b_pass_map[t]
+            )
+            p_value = ExperimentComparator.mcnemar_test(a_pass_b_fail, a_fail_b_pass)
+
+            agent_deltas.append(AgentDelta(
+                agent_name=agent,
+                a_pass_rate=a_pass_rate,
+                b_pass_rate=b_pass_rate,
+                delta=delta,
+                a_pass_b_fail=a_pass_b_fail,
+                a_fail_b_pass=a_fail_b_pass,
+                p_value=p_value,
+                significant=p_value < 0.05,
+            ))
+
+            # Task flips
+            for task in common:
+                a_passed = a_pass_map[task]
+                b_passed = b_pass_map[task]
+                if a_passed and not b_passed:
+                    fc = failure_class_for(b_groups[(task, agent)])
+                    flipped_pass_to_fail.append(TaskFlip(
+                        task_id=task,
+                        agent_name=agent,
+                        direction="pass_to_fail",
+                        failure_class=fc,
+                    ))
+                elif not a_passed and b_passed:
+                    fc = failure_class_for(a_groups[(task, agent)])
+                    flipped_fail_to_pass.append(TaskFlip(
+                        task_id=task,
+                        agent_name=agent,
+                        direction="fail_to_pass",
+                        failure_class=fc,
+                    ))
+
+        # Failure class distribution shifts
+        def count_failures(runs: list[Any]) -> dict[str, int]:
+            counts: dict[str, int] = {}
+            for run in runs:
+                if not run.passed:
+                    fc = (
+                        getattr(run, "failure_category", None)
+                        or getattr(run, "failure_class", None)
+                    )
+                    if fc:
+                        counts[str(fc)] = counts.get(str(fc), 0) + 1
+            return counts
+
+        a_failures = count_failures(a_runs)
+        b_failures = count_failures(b_runs)
+        all_failure_classes = sorted(set(a_failures) | set(b_failures))
+        failure_shifts: dict[str, dict[str, Any]] = {}
+        for fc in all_failure_classes:
+            a_count = a_failures.get(fc, 0)
+            b_count = b_failures.get(fc, 0)
+            failure_shifts[fc] = {
+                "a_count": a_count,
+                "b_count": b_count,
+                "delta": b_count - a_count,
+            }
+
+        # Unique solves: tasks solved by any agent in one exp but not the other
+        a_solved = {t for (t, _), runs in a_groups.items() if majority_pass(runs)}
+        b_solved = {t for (t, _), runs in b_groups.items() if majority_pass(runs)}
+        unique_a = sorted(a_solved - b_solved)
+        unique_b = sorted(b_solved - a_solved)
+
+        return ComparisonResult(
+            exp_a_id=exp_a_id,
+            exp_b_id=exp_b_id,
+            exp_a_name=exp_a_id,
+            exp_b_name=exp_b_id,
+            agent_deltas=agent_deltas,
+            flipped_pass_to_fail=flipped_pass_to_fail,
+            flipped_fail_to_pass=flipped_fail_to_pass,
+            failure_shifts=failure_shifts,
+            unique_a=unique_a,
+            unique_b=unique_b,
+        )
+
+    @staticmethod
+    def mcnemar_test(a_pass_b_fail: int, a_fail_b_pass: int) -> float:
+        """McNemar's test for paired nominal data.
+
+        Returns two-sided p-value.
+        Uses exact binomial for n < 25, chi-squared approximation for n >= 25.
+        """
+        n = a_pass_b_fail + a_fail_b_pass
+        if n == 0:
+            return 1.0
+
+        b = a_pass_b_fail
+
+        if n < 25:
+            # Exact binomial: X ~ Binomial(n, 0.5), two-sided
+            half = 0.5 ** n
+            # P(X <= b)
+            p_le = sum(math.comb(n, k) * half for k in range(b + 1))
+            # P(X >= b)
+            p_ge = sum(math.comb(n, k) * half for k in range(b, n + 1))
+            p_value = 2.0 * min(p_le, p_ge)
+        else:
+            # Chi-squared approximation with continuity correction
+            chi2_stat = (abs(a_pass_b_fail - a_fail_b_pass) - 1) ** 2 / n
+            p_value = math.erfc(math.sqrt(chi2_stat / 2))
+
+        return max(0.0, min(1.0, p_value))
+
+    @staticmethod
+    def bootstrap_confidence_interval(
+        values: list[float],
+        confidence: float = 0.95,
+        n_bootstrap: int = 10000,
+        seed: int = 42,
+    ) -> tuple[float, float, float]:
+        """Bootstrap confidence interval for a mean.
+
+        Returns (point_estimate, lower_bound, upper_bound).
+        """
+        if not values:
+            return (0.0, 0.0, 0.0)
+
+        random.seed(seed)
+        point_estimate = sum(values) / len(values)
+
+        bootstrap_means = []
+        for _ in range(n_bootstrap):
+            resample = random.choices(values, k=len(values))
+            bootstrap_means.append(sum(resample) / len(resample))
+
+        bootstrap_means.sort()
+        alpha = 1.0 - confidence
+        lower_idx = int(alpha / 2 * n_bootstrap)
+        upper_idx = int((1.0 - alpha / 2) * n_bootstrap)
+        # Clamp indices to valid range
+        lower_idx = max(0, min(lower_idx, len(bootstrap_means) - 1))
+        upper_idx = max(0, min(upper_idx, len(bootstrap_means) - 1))
+
+        return (point_estimate, bootstrap_means[lower_idx], bootstrap_means[upper_idx])

@@ -30,6 +30,7 @@ class TraceCollector:
         self.agent_name = agent_name
         self._events: list[TraceEvent] = []
         self._sequence: int = 0
+        self._current_turn: int = 0
         self._start_time: datetime | None = None
 
     @property
@@ -60,10 +61,15 @@ class TraceCollector:
             duration_ms=duration_ms,
             token_usage=token_usage,
             sequence_number=self._sequence,
+            turn_number=self._current_turn,
         )
         self._events.append(event)
         self._sequence += 1
         return event
+
+    def new_turn(self) -> None:
+        """Advance to the next turn. All subsequent events will have an incremented turn_number."""
+        self._current_turn += 1
 
     # --- Convenience methods ---
 
@@ -148,6 +154,7 @@ class TraceCollector:
             data=data,
             token_usage=token_usage,
             sequence_number=self._sequence,
+            turn_number=self._current_turn,
         )
         self._sequence += 1
         self._events.append(event)
