@@ -72,6 +72,7 @@ indent-style = "space"
 
 [tool.ruff.lint.per-file-ignores]
 "src/agentbench/reporting/reporter.py" = ["E501"]  # Jinja2 template rows can't be wrapped
+"tests/test_reporting/*.py" = ["E501"]              # Test fixture dicts are intentionally verbose
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
