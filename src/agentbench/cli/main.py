@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+from typing import Optional
+
 import typer
 from rich.console import Console
+
+from agentbench import __version__
 
 app = typer.Typer(
     name="agentbench",
@@ -9,6 +13,22 @@ app = typer.Typer(
     no_args_is_help=True,
 )
 console = Console()
+
+
+def _version_callback(value: bool) -> None:
+    if value:
+        typer.echo(f"agentbench {__version__}")
+        raise typer.Exit()
+
+
+@app.callback()
+def main(
+    version: Optional[bool] = typer.Option(  # noqa: UP007
+        None, "--version", "-V", callback=_version_callback, is_eager=True,
+        help="Show version and exit.",
+    ),
+) -> None:
+    pass
 
 
 @app.command()

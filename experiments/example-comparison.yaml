@@ -1,0 +1,15 @@
+name: "sonnet-vs-opus-march-2026"
+suite: "quick-v1"
+runs_per_task: 3
+agents:
+  - name: "sonnet-4"
+    adapter: "anthropic-api"
+    model: "claude-sonnet-4-20250514"
+    temperature: 0
+    max_tokens_per_response: 8192
+  - name: "opus-4"
+    adapter: "anthropic-api"
+    model: "claude-opus-4-20250514"
+    temperature: 0
+    max_tokens_per_response: 8192
+parallelism: 4

@@ -14,6 +14,12 @@ def test_cli_help():
     assert "agentbench" in result.stdout.lower() or "eval" in result.stdout.lower()
 
 
+def test_cli_version():
+    result = runner.invoke(app, ["--version"])
+    assert result.exit_code == 0
+    assert "0.1.0" in result.stdout
+
+
 def test_run_requires_task_or_suite():
     result = runner.invoke(app, ["run", "--agent", "test"])
     assert result.exit_code != 0
