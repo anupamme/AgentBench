@@ -1,0 +1,48 @@
+# AgentBench Comparison Report
+
+**Experiment A**: {{ a.name | default("Experiment A") }} ({{ a.created_at | default("—") }})
+**Experiment B**: {{ b.name | default("Experiment B") }} ({{ b.created_at | default("—") }})
+
+---
+
+## Pass Rate Changes
+
+| Agent | Exp A | Exp B | Delta | p-value | Significant? |
+|-------|-------|-------|-------|---------|-------------|
+{% for agent, delta in (cmp.agent_deltas | default({})).items() %}
+| {{ agent }} | {{ delta.a_rate | format_pct }} | {{ delta.b_rate | format_pct }} | {{ "%+.1f" | format(delta.delta * 100) }}% | {{ delta.p_value | round(3) }} | {{ "✓" if delta.p_value < 0.05 else "—" }} |
+{% endfor %}
+
+## Task Flips
+
+### Regressions (pass → fail): {{ (cmp.flipped_pass_to_fail | default([])) | length }}
+
+{% if cmp.flipped_pass_to_fail | default([]) %}
+| Task | Agent | New Failure |
+|------|-------|-------------|
+{% for flip in cmp.flipped_pass_to_fail %}
+| {{ flip.task_id }} | {{ flip.agent }} | {{ flip.failure_class | default("—") }} |
+{% endfor %}
+{% else %}
+No regressions detected.
+{% endif %}
+
+### Improvements (fail → pass): {{ (cmp.flipped_fail_to_pass | default([])) | length }}
+
+{% if cmp.flipped_fail_to_pass | default([]) %}
+| Task | Agent | Previous Failure |
+|------|-------|------------------|
+{% for flip in cmp.flipped_fail_to_pass %}
+| {{ flip.task_id }} | {{ flip.agent }} | {{ flip.prev_failure_class | default("—") }} |
+{% endfor %}
+{% else %}
+No improvements detected.
+{% endif %}
+
+## Failure Distribution Changes
+
+| Failure Class | Exp A | Exp B | Delta |
+|--------------|-------|-------|-------|
+{% for cls, shift in (cmp.failure_shifts | default({})).items() %}
+| `{{ cls }}` | {{ shift.a_count }} | {{ shift.b_count }} | {{ "%+d" | format(shift.delta) }} |
+{% endfor %}

@@ -1,0 +1,54 @@
+# AgentBench Report: {{ s.name | default("Unnamed Experiment") }}
+
+**Generated**: {{ s.created_at | default("—") }}
+**Suite**: {{ s.suite_name | default("—") }}
+**Total Tasks**: {{ s.total_tasks | default(0) }}
+**Total Runs**: {{ s.total_runs | default(0) }}
+
+---
+
+## Summary
+
+| Agent | Pass Rate | Avg Tokens | Avg Turns | Avg Time |
+|-------|-----------|-----------|-----------|----------|
+{% for agent, stats in (s.by_agent | default({})).items() %}
+| {{ agent }} | {{ stats.pass_rate | format_pct }} | {{ stats.avg_tokens | format_tokens }} | {{ stats.avg_turns | round(1) }} | {{ stats.avg_wall_clock | default(0) | round(1) }}s |
+{% endfor %}
+
+## Results by Difficulty
+
+{% for diff, diff_stats in (s.by_difficulty | default({})).items() %}
+### {{ diff | capitalize }}
+
+| Agent | Tasks | Passed | Pass Rate |
+|-------|-------|--------|-----------|
+{% for agent, agent_stats in (diff_stats.by_agent | default({})).items() %}
+| {{ agent }} | {{ agent_stats.total }} | {{ agent_stats.passed }} | {{ agent_stats.pass_rate | format_pct }} |
+{% endfor %}
+
+{% endfor %}
+
+## Failure Analysis
+
+| Failure Class | Count | Percentage |
+|--------------|-------|------------|
+{% set total_failed = s.total_failed | default(1) %}
+{% for cls, count in (s.by_failure_class | default({})).items() | sort(attribute='1', reverse=true) %}
+| `{{ cls }}` | {{ count }} | {{ (count / (total_failed if total_failed > 0 else 1) * 100) | round(1) }}% |
+{% endfor %}
+
+## Efficiency Comparison
+
+| Agent | Avg Tokens | Avg Turns | Avg Time | Avg Process Score |
+|-------|-----------|-----------|----------|-------------------|
+{% for agent, stats in (s.by_agent | default({})).items() %}
+| {{ agent }} | {{ stats.avg_tokens | format_tokens }} | {{ stats.avg_turns | round(1) }} | {{ stats.avg_wall_clock | default(0) | round(1) }}s | {{ stats.avg_process_score | default(0) | round(3) }} |
+{% endfor %}
+
+## Per-Task Results
+
+| Task | Difficulty | Agent | Result | Tokens | Turns | Time | Failure |
+|------|-----------|-------|--------|--------|-------|------|---------|
+{% for run in (s.all_runs | default([])) %}
+| {{ run.task_id }} | {{ run.difficulty | default("—") }} | {{ run.agent_name }} | {{ "✓" if run.primary_pass else "✗" }} | {{ run.total_tokens | format_tokens }} | {{ run.total_turns }} | {{ run.wall_clock_seconds | default(0) | round(1) }}s | {{ run.failure_class | default("—") }} |
+{% endfor %}
